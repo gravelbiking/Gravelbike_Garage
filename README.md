@@ -12,14 +12,14 @@ Gravelbike Garage ist eine selbst gehostete Web-App für alle, die ihre Fahrräd
 - **Lager und Einkauf:** Ersatzteile und Verbrauchsmaterialien mit einzelnen Lagerpositionen, Lagerorten, Mindestbeständen, Preisen, Belegen und nachvollziehbaren Entnahmen für Services. Inventurberichte zeigen Bestände und Werte.
 - **Dokumente und Lebensläufe:** Verträge, Rechnungen und Werkstattunterlagen ablegen und mehrfach verknüpfen. Für jedes Fahrrad lassen sich Verkaufs- und Werkstatt-Lebensläufe erstellen.
 - **Adressbuch:** Händler, Werkstätten und Lieferanten mit mehreren Rollen, Kontakt- und Kundendaten, Dokumenten, Account-Links und Werkstattterminen.
-- **Werkzeug und Radcomputer:** Werkzeuge spezifizieren und Bauteilen zuordnen; Radcomputer mit Softwarestand und Kaufdaten verwalten.
+- **Werkzeug und Radcomputer:** Werkzeuge spezifizieren und bestehende Bauteilzuordnungen einsehen; Radcomputer mit Softwarestand und Kaufdaten verwalten.
 - **Strava:** Nach Einrichtung der Strava-Integration das eigene Konto verbinden, Fahrräder zuordnen und gefahrene Kilometer synchronisieren.
 - **Zugangsschutz:** Passwortanmeldung und optionale Zwei-Faktor-Anmeldung mit Passkeys, YubiKeys, Authenticator-App und Wiederherstellungscodes.
 - **Info und Verwaltung:** Nutzungshandbuch mit Fahrrad-Schnellstart, Releasenotes, Systemeinstellungen, Datenexport und eine Updatefunktion bei eingerichtetem Update-Dienst.
 
 ## Download und Installation
 
-Die aktuelle Version ist **1.2.1 · Secure Hamster**.
+Die aktuelle Version ist **1.2.1.a · Secure Hamster**.
 
 ➡️ [Aktuelle Version mit Installationspaket herunterladen](https://github.com/gravelbiking/Gravelbike_Garage/releases/latest)
 
@@ -30,6 +30,15 @@ Das Paket ist für **Uberspace mit PHP und MariaDB** vorbereitet. Die Anleitunge
 Dieses Repository stellt die freigegebenen Installationspakete bereit. Entwicklungsumgebung, lokale Testdaten und private Zugangsdaten werden nicht veröffentlicht.
 
 ## Letzte Releasenotes
+
+### [1.2.1.a · Secure Hamster](https://github.com/gravelbiking/Gravelbike_Garage/releases/tag/v1.2.1.a)
+
+- **Teile-Lebenslauf (#30):** Verbaute Bauteile im Werkstattauftrag nach Kategorien auswählen und zum Austausch vorsehen. Beim Abschluss tatsächlichen Ausbau bestätigen; die Laufleistung wird unveränderlich eingefroren. Das Teilearchiv ist im Lebenslauf des jeweiligen Fahrrads aufklappbar.
+- **Lager (#45):** Blaue Kategorie-Schnellauswahl und kombinierbare Spaltenfilter; Hersteller und Teilenummer sind sichtbar. Die mobile Tabelle ist horizontal scrollbar.
+- **Fahrradformular (#46):** Spitzname statt Name, vereinfachte Felder und genau ein Foto mit Upload/Kamera, Vorschau, Löschen und Ersetzen. Verknüpfte Dokumente bleiben als reine Anzeige mit Öffnen-Funktion erhalten.
+- **Bauteilformular (#47):** Einheitliche Breite des Einbaudatums; keine Werkzeugzuordnung im Formular. Bestehende Zuordnungen bleiben erhalten.
+
+Die vier Issues stehen im Projekt auf **Im Test**. Lokale PHP/MySQL- und Browserprüfungen sind bestanden. Fehlende Einbau-km werden im Teilearchiv als unbekannte Laufleistung angezeigt.
 
 ### [1.2.1 · Secure Hamster](https://github.com/gravelbiking/Gravelbike_Garage/releases/tag/v1.2.1)
 
