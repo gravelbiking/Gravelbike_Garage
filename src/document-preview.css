@@ -1,0 +1,59 @@
+.document-preview{
+ box-sizing:border-box;
+ position:fixed;
+ inset:0;
+ padding:0;
+ margin:auto;
+ width:min(96vw,1100px);
+ height:94vh;
+ height:94dvh;
+ max-width:none;
+ max-height:none;
+ overflow:hidden;
+ color:#24332b;
+ background:#fff;
+ border:1px solid #dce3dc;
+ border-radius:14px;
+ box-shadow:0 18px 48px #13281a40;
+}
+.document-preview::backdrop{background:#17241dcc}
+.preview-shell{height:100%;display:flex;flex-direction:column}
+.preview-toolbar,.preview-pages{display:flex;align-items:center;gap:.65rem;padding:.55rem .8rem;border-bottom:1px solid #e2e8e1;background:#fff}
+.preview-toolbar{position:static;height:auto;justify-content:initial}
+.preview-toolbar form{margin:0}
+.preview-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.preview-toolbar a,.preview-toolbar button,.preview-pages button{
+ padding:.45rem .65rem;
+ border:1px solid #cbd7cc;
+ border-radius:7px;
+ color:#24332b;
+ background:#fff;
+ text-decoration:none;
+ white-space:nowrap;
+ cursor:pointer;
+}
+.preview-toolbar .preview-close{color:#fff;background:#233e32;border-color:#233e32}
+.preview-pages{justify-content:center}
+.preview-pages[hidden],.preview-content [hidden]{display:none}
+.preview-content{min-height:0;flex:1;overflow:auto;padding:.75rem;background:#f1f4f0;text-align:center}
+.preview-content canvas,.preview-content img{display:block;max-width:100%;height:auto;margin:auto;background:#fff}
+.preview-status{padding:1rem;margin:0}
+@media(max-width:600px){
+ .document-preview{width:100%;height:100vh;height:100dvh;border:0;border-radius:0}
+ .preview-toolbar{padding-top:max(.55rem,env(safe-area-inset-top))}
+ .preview-toolbar a,.preview-toolbar button{font-size:.8rem}
+}
+@media print{.document-preview{display:none}}
+
+.preview-toolbar{flex-wrap:wrap;padding-top:max(.55rem,env(safe-area-inset-top,0px));padding-left:max(.8rem,env(safe-area-inset-left,0px));padding-right:max(.8rem,env(safe-area-inset-right,0px))}
+.preview-toolbar a,.preview-toolbar button,.preview-pages button{min-width:44px;min-height:44px;display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box}
+.preview-content{padding-bottom:calc(.75rem + env(safe-area-inset-bottom,0px))}
+.preview-name{flex-basis:100%;min-width:0}
+.preview-pages{flex-wrap:wrap}
+
+/* The standalone bicycle report shares the same recovery controls. */
+.offline-banner{position:sticky;top:0;z-index:80;background:#fff0ce;color:#594018;padding:12px;text-align:center}
+.request-status{position:fixed;top:env(safe-area-inset-top,0px);right:12px;z-index:90;background:#233e32;color:white;padding:10px 14px;max-width:calc(100% - 24px);border-radius:8px}
+.request-error{padding:16px;border:1px solid #ad493e;background:#fff3ef}
+.fatal-error{position:fixed;inset:0;z-index:200;background:#f5f5f0;color:#23312b;padding:calc(32px + env(safe-area-inset-top,0px)) 24px;overflow:auto}
+.fatal-error button{min-height:44px;min-width:44px}

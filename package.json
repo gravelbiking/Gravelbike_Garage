@@ -1,0 +1,15 @@
+{
+  "name": "graveltube-garage",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "python3 codespace/manage.py start",
+    "dev:stop": "python3 codespace/manage.py stop",
+    "dev:status": "python3 codespace/manage.py status",
+    "dev:build": "node codespace/build.mjs",
+    "test": "node codespace/test.mjs",
+    "test:components": "node scripts/test-components.mjs"
+  },
+  "version": "1.2.4",
+  "releaseName": "STRAVA bugfixing"
+}

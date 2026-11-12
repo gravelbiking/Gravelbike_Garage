@@ -1,0 +1,30 @@
+import assert from 'node:assert/strict';
+import {normalizeGarage,normalizeStock,stockMovement,addStockPosition,consumeSupplies,receivePurchase,stockValue,contactRoles,packageBalance} from '../src/logic.js';
+
+const old={bikes:[],history:[],inventory:[{id:'pads',name:'Bremsbelag',unit:'Paar',quantity:2,unitPrice:12.5,purchaseDate:'2026-10-01',location:'Regal',invoices:[{fileId:'receipt'}],photo:'photo'}],contacts:[{id:'c',type:'Lieferant'}]};
+const migrated=normalizeGarage(old),s=migrated.inventory[0];
+assert.equal(s.quantity,2);assert.equal(s.positions.length,1);assert.equal(s.movements[0].type,'opening');
+assert.equal(s.positions[0].invoices[0].fileId,'receipt');assert.equal(s.photo,'photo');assert.equal(old.inventory[0].positions,undefined);
+assert.deepEqual(normalizeStock(s),s,'Migration must be idempotent');assert.deepEqual(contactRoles(migrated.contacts[0]),['Lieferant']);
+assert.deepEqual(contactRoles({roles:['Händler','Werkstatt']}),['Händler','Werkstatt']);
+const p=addStockPosition(s,{label:'Kiste 2',quantity:6,unitPrice:15,packageType:'Kiste',packageSize:3,location:'B',purchaseDate:'2026-11-01',supplierId:'',supplier:'',notes:'',invoices:[]});
+assert.equal(s.quantity,8);assert.deepEqual(stockValue(s),{cents:11500,missing:0});
+const service={id:'service-1',title:'Bremsbeläge gewechselt',date:'2026-11-02',bikeId:'bike-1',bikeName:'Gravel'};
+const result=consumeSupplies(migrated,[{inventoryId:'pads',positionId:p.id,quantity:6}],service);
+assert.equal(result.inventory[0].quantity,2);assert.equal(result.inventory[0].positions[1].quantity,0,'Empty positions remain visible');
+assert.equal(result.inventory[0].movements.at(-1).historyId,'service-1');assert.equal(result.inventory[0].movements.at(-1).before,6);assert.equal(result.inventory[0].movements.at(-1).after,0);
+assert.equal(result.materials[0].positionId,p.id);assert.equal(result.materials[0].unitPrice,15);assert.equal(result.materials[0].movementId,result.inventory[0].movements.at(-1).id);assert.equal(s.quantity,8,'Consumption cannot mutate unsaved input');
+assert.throws(()=>consumeSupplies(migrated,[{inventoryId:'pads',positionId:p.id,quantity:4},{inventoryId:'pads',positionId:'legacy-pads',quantity:3}],service),/Bestand/);assert.equal(s.quantity,8);
+assert.throws(()=>consumeSupplies(migrated,[{inventoryId:'pads',positionId:p.id,quantity:1},{inventoryId:'pads',positionId:p.id,quantity:1}],service),/mehrfach/);
+const unknown=addStockPosition(s,{label:'Ohne Preis',quantity:0.5,unitPrice:null,packageSize:1,packageType:'Einzelbestand',location:'C',purchaseDate:'',supplierId:'',supplier:'',notes:'',invoices:[]});
+assert.deepEqual(stockValue(s),{cents:11500,missing:1});stockMovement(s,unknown,-0.5,'adjustment',{reason:'Inventur'});assert.deepEqual(stockValue(s),{cents:11500,missing:0});
+const zero=addStockPosition(s,{...unknown,label:'Kostenlos erhalten',quantity:1,unitPrice:0});assert.equal(stockValue(s).missing,0,'An explicit zero price is known');
+const received=receivePurchase({...migrated,shopping:[{id:'buy',source:'online',status:'purchased',unit:'Paar',quantity:3,usedQuantity:1,unitPrice:20,invoices:[{fileId:'bill'}]}]},'buy','pads','2026-11-02');
+const lot=received.inventory[0].positions.at(-1);assert.equal(lot.quantity,2);assert.equal(lot.unitPrice,20);assert.equal(lot.invoices[0].fileId,'bill');assert.equal(received.shopping[0].receivedPositionId,lot.id);
+assert.throws(()=>consumeSupplies(received,[{shoppingId:'buy',positionId:'legacy-pads',quantity:1}],service),/Lagerposition/);
+assert.equal(consumeSupplies(received,[{shoppingId:'buy',quantity:1}],service).inventory[0].positions.at(-1).quantity,1);
+assert.throws(()=>receivePurchase(received,'buy','pads','2026-11-02'),/eingelagert/);
+console.log('PASS: legacy migration, position balances, fractional packages, costs per position, unknown/zero prices, durable withdrawals, service links and receiving a purchase once.');
+
+assert.deepEqual(packageBalance({quantity:5,packageSize:3}),{full:1,remainder:2});
+assert.deepEqual(packageBalance({quantity:0.7,packageSize:0.3}),{full:2,remainder:0.1});

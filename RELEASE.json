@@ -1,0 +1,7 @@
+{
+  "version": "1.2.4",
+  "name": "STRAVA bugfixing",
+  "release_zip_sha256": "8987c35a6a5df159e218b66833c01a78ae7ecd57a37e6287738ec8b71e503b2a",
+  "tested_source_sha256": "87fca2833c26906b600ada8a96fc444b2fc8f8af26c3da461ccfd0aa94aee3df",
+  "source_snapshot": "Application source only; no local history, runtime data or server credentials."
+}

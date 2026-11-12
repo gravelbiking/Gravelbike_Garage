@@ -1,0 +1,16 @@
+import {readFile,writeFile,mkdir,chmod} from 'node:fs/promises';
+import {resolve,dirname,join} from 'node:path';
+import {fileURLToPath} from 'node:url';
+import {prepareApp} from '../scripts/prepare-app.mjs';
+const root=resolve(dirname(fileURLToPath(import.meta.url)),'..'),privateDir=join(root,'.local/codespace');
+const credentials=JSON.parse(await readFile(join(privateDir,'credentials.json'),'utf8'));
+const database={host:process.env.MARIADB_HOST||'db',port:3306,name:process.env.MARIADB_DATABASE||'garage_codespace',user:process.env.MARIADB_USER||'garage',password:process.env.MARIADB_PASSWORD||credentials.database_password,table_prefix:'gt_'};
+if(!/^[a-f0-9]{48}$/.test(credentials.installation_key))throw Error('Ungültiger Codespace-Installationsschlüssel.');
+const origin=process.env.CODESPACE_NAME?`https://${process.env.CODESPACE_NAME}-4173.${process.env.GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN||'app.github.dev'}`:'http://localhost:4173';
+const app=join(root,'.local/app');
+await prepareApp(app,{development:true,installationKey:credentials.installation_key,preserveConfig:true});
+await mkdir(join(privateDir,'uploads'),{recursive:true,mode:0o700});
+const config={installation_name:'Codespace',installation_key:credentials.installation_key,database,origin,storage_path:join(privateDir,'uploads'),cookie_prefix:'garage_codespace_'};
+const p=join(app,'private/config.php');
+await writeFile(p,`<?php return json_decode(base64_decode('${Buffer.from(JSON.stringify(config)).toString('base64')}'),true,512,JSON_THROW_ON_ERROR);\n`,{mode:0o600});await chmod(p,0o600);
+console.log('Codespace-App vorbereitet: '+origin+' · separate leere Datenbank beim ersten Start.');

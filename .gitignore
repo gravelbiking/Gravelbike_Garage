@@ -1,0 +1,15 @@
+# Generated runtime data and environment credentials
+.local/
+node_modules/
+__pycache__/
+*.pyc
+.env
+.env.*
+!.env.example
+*.log
+*.sqlite*
+*.sock
+*.pid
+.DS_Store
+releases/
+dist/

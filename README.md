@@ -1,66 +1,55 @@
 # Gravelbike Garage
 
-Deine Fahrräder, deine Werkstatt, deine Geschichte.
+**Version 1.2.4 · STRAVA bugfixing**
 
-Gravelbike Garage ist eine selbst gehostete Web-App für alle, die ihre Fahrräder und die Arbeiten daran an einem Ort verwalten möchten. Entstanden ist sie zunächst für eine private Fahrradwerkstatt. Sie lässt sich im Browser auf Mac, iPhone und iPad verwenden und als Web-App zum Home-Bildschirm beziehungsweise Dock hinzufügen.
+Eine private Fahrradgarage als Web-App: Fahrräder und verbaute Bauteile verwalten, Serviceintervalle planen, Werkstattaufträge dokumentieren, Ersatzteilbestände führen und Dokumente sicher zuordnen. Die App lässt sich am Mac, auf dem Tablet und Smartphone im Browser oder als installierte Web-App nutzen.
 
-## Was die App bietet
+## Funktionen
 
-- **Fahrradverwaltung:** Steckbriefe mit Fotos, Seriennummern, Kaufdaten und aktuell verbauten Komponenten. Dazu Rahmen- und Reifendaten sowie Angaben zu Jobrad, Leasing und Versicherung.
-- **Kilometer und Wartung:** Kilometerstände mit Datum, Wartungsintervalle nach Zeit oder Laufleistung, Fälligkeitshinweise und ein Servicebuch pro Fahrrad.
-- **Werkstattaufträge:** Service und Reparaturen für eigene und fremde Fahrräder mit Ersatzteilen, Checklisten und verknüpften Anleitungen.
-- **Lager und Einkauf:** Ersatzteile und Verbrauchsmaterialien mit einzelnen Lagerpositionen, Lagerorten, Mindestbeständen, Preisen, Belegen und nachvollziehbaren Entnahmen für Services. Inventurberichte zeigen Bestände und Werte.
-- **Dokumente und Lebensläufe:** Verträge, Rechnungen und Werkstattunterlagen ablegen und mehrfach verknüpfen. Für jedes Fahrrad lassen sich Verkaufs- und Werkstatt-Lebensläufe erstellen.
-- **Adressbuch:** Händler, Werkstätten und Lieferanten mit mehreren Rollen, Kontakt- und Kundendaten, Dokumenten, Account-Links und Werkstattterminen.
-- **Werkzeug und Radcomputer:** Werkzeuge spezifizieren und bestehende Bauteilzuordnungen einsehen; Radcomputer mit Softwarestand und Kaufdaten verwalten.
-- **Strava:** Nach Einrichtung der Strava-Integration das eigene Konto verbinden, Fahrräder zuordnen und gefahrene Kilometer synchronisieren.
-- **Zugangsschutz:** Passwortanmeldung und optionale Zwei-Faktor-Anmeldung mit Passkeys, YubiKeys, Authenticator-App und Wiederherstellungscodes.
-- **Info und Verwaltung:** Nutzungshandbuch mit Fahrrad-Schnellstart, Releasenotes, Systemeinstellungen, Datenexport und eine Updatefunktion bei eingerichtetem Update-Dienst.
+- **Meine Fahrräder:** Fahrradsteckbriefe, Komponenten, Kilometerstände, Serviceplan, Servicebuch, Radcomputer und Fahrradarchiv.
+- **Lager:** Artikel, Bestände und Lagerorte, Einkaufsliste, Materialverbrauch und Belege.
+- **Werkstatt:** Aufträge mit einzelnen Tätigkeiten, passenden Ersatzteilen, Werkzeug und Anleitungen.
+- **Adressbuch und Dokumente:** Kontakte, Werkstatttermine, Rechnungen, Verträge und technische Unterlagen.
+- **Strava:** Zwei unabhängige Verbindungen mit jeweils eigener Client-ID und eigenem Client-Secret; Fahrräder getrennt zuordnen und Kilometer synchronisieren.
+- **Verwaltung:** Passwortschutz, optionale Zwei-Faktor-Anmeldung, Passkeys/YubiKey, Einstellungen, Handbuch und Versionsinformationen.
 
-## Download und Installation
+## Neu in 1.2.4 · STRAVA bugfixing
 
-Die aktuelle Version ist **1.2.1.a · Secure Hamster**.
+- Zwei vollständig unabhängige Strava-Verbindungen mit getrennten Zugangsdaten, Autorisierungen, Importen und Fehlerbehandlung.
+- Kilometeranzeigen und Formularwerte mit maximal einer Nachkommastelle. Präzise interne Importdaten bleiben erhalten; Wartungen lassen sich auch nach einem Strava-Import speichern.
+- Serviceintervalle mit Assistent, Zusammenfassung, Fahrrad- und Fälligkeitsfilter sowie Zuordnung zur nächsten Servicefälligkeit.
+- Werkstatt-Assistent: Die Nummer bleibt über alle Eingabeseiten derselben Tätigkeit gleich. Neue Aufträge verwenden bereits angelegte Fahrräder.
+- Verbaute Bauteile direkt als Lagerartikel ohne Bestand anlegen und anschließend mit erhaltenen Eingaben zum Auftrag zurückkehren.
+- Verbesserungen für mobile WebViews, Lade-/Fehlerzustände, Offline-Hinweise und Navigation.
 
-➡️ [Aktuelle Version mit Installationspaket herunterladen](https://github.com/gravelbiking/Gravelbike_Garage/releases/latest)
+## Download für Uberspace
 
-Unter **Assets** das benannte **Gravelbike-Garage-Uberspace-VERSION.zip** und die zugehörige **.zip.sha256** herunterladen. Die automatisch von GitHub angebotenen „Source code“-Archive sind nicht das Installationspaket.
+Das geprüfte Installationspaket und die zugehörige SHA-256-Prüfsumme stehen im [Release v1.2.4](https://github.com/gravelbiking/Gravelbike_Garage/releases/tag/v1.2.4).
 
-Das Paket ist für **Uberspace mit PHP und MariaDB** vorbereitet. Die Anleitungen **INSTALLATION.md** und **UPDATE.md** im ZIP beschreiben Einrichtung und Aktualisierung. Eigene Datenbankzugangsdaten und einen privaten Installationsschlüssel verwenden, HTTPS einrichten und vor einem Update eine Sicherung erstellen. Die SHA256-Prüfsumme dient zur Kontrolle des heruntergeladenen Pakets.
+Installation mit eigener PHP-/MariaDB-Umgebung: [Installationsanleitung](selfhost/INSTALLATION.md). Das ZIP enthält keine Zugangsdaten und keine Nutzerdaten. Für eine neue Installation müssen eigene Datenbankzugänge und ein eigener Installationsschlüssel konfiguriert werden.
 
-Dieses Repository stellt die freigegebenen Installationspakete bereit. Entwicklungsumgebung, lokale Testdaten und private Zugangsdaten werden nicht veröffentlicht.
+## Im GitHub Codespace bearbeiten
 
-## Letzte Releasenotes
+[Codespace erstellen](https://github.com/codespaces/new?hide_repo_select=true&ref=main&repo=1441876709)
 
-### [1.2.1.a · Secure Hamster](https://github.com/gravelbiking/Gravelbike_Garage/releases/tag/v1.2.1.a)
+1. Codespace für den Branch `main` erstellen. PHP 8.4, Node 24 und eine eigene MariaDB 11.4 werden vorbereitet.
+2. Die Einrichtung und die Quellcode-Tests abwarten. Die App startet anschließend automatisch auf **Port 4173**.
+3. Im Tab **Ports** bei 4173 auf **Im Browser öffnen** klicken. Der Port bleibt privat.
+4. Einen eigenen App-Benutzernamen und ein Passwort anlegen. Der für diesen Codespace neu erzeugte Installationsschlüssel ist in der Entwicklungsansicht vorausgefüllt.
+5. Dateien unter `src/` und `selfhost/` bearbeiten. Änderungen werden automatisch neu gebaut; anschließend die App neu laden.
 
-- **Teile-Lebenslauf (#30):** Verbaute Bauteile im Werkstattauftrag nach Kategorien auswählen und zum Austausch vorsehen. Beim Abschluss tatsächlichen Ausbau bestätigen; die Laufleistung wird unveränderlich eingefroren. Das Teilearchiv ist im Lebenslauf des jeweiligen Fahrrads aufklappbar.
-- **Lager (#45):** Blaue Kategorie-Schnellauswahl und kombinierbare Spaltenfilter; Hersteller und Teilenummer sind sichtbar. Die mobile Tabelle ist horizontal scrollbar.
-- **Fahrradformular (#46):** Spitzname statt Name, vereinfachte Felder und genau ein Foto mit Upload/Kamera, Vorschau, Löschen und Ersetzen. Verknüpfte Dokumente bleiben als reine Anzeige mit Öffnen-Funktion erhalten.
-- **Bauteilformular (#47):** Einheitliche Breite des Einbaudatums; keine Werkzeugzuordnung im Formular. Bestehende Zuordnungen bleiben erhalten.
+```sh
+npm test              # enthaltene Quellcode-Regressionstests
+npm run dev:build     # App neu bauen
+npm run dev:status    # Vorschau prüfen
+npm run dev:stop      # Vorschau stoppen; Daten behalten
+npm run dev          # Vorschau wieder starten
+```
 
-Die vier Issues stehen im Projekt auf **Im Test**. Lokale PHP/MySQL- und Browserprüfungen sind bestanden. Fehlende Einbau-km werden im Teilearchiv als unbekannte Laufleistung angezeigt.
+Die Codespace-Datenbank und Uploads sind vollständig von den Uberspace-Instanzen getrennt. Zugangsdaten, Installationsschlüssel, Laufzeitdaten und Logs werden unter `.local/` erzeugt und von Git ausgeschlossen. Ein Codespace-Neuaufbau verwendet die bestehenden Zugangsdaten und den persistenten Datenbank-Datenträger weiter.
 
-### [1.2.1 · Secure Hamster](https://github.com/gravelbiking/Gravelbike_Garage/releases/tag/v1.2.1)
+Die Freigabe von Änderungen für Server oder neue GitHub-Releases erfolgt weiterhin ausdrücklich. Der Codespace veröffentlicht keine Änderungen automatisch. Strava muss bei Bedarf mit eigenen API-Daten und dem passenden Callback-Host des Codespace eingerichtet werden; Produktionsverbindungen werden nicht übernommen.
 
-- Verpflichtender Wechsel vorläufiger Installationspasswörter nach vollständiger Anmeldung einschließlich optionaler 2FA.
-- Passwörter mit mindestens **15 Zeichen** und mindestens **drei von vier Zeichengruppen**: Großbuchstaben, Kleinbuchstaben, Zahlen und Sonderzeichen. Das bestehende Hashverfahren erlaubt höchstens 72 UTF-8-Bytes.
-- Passwortwechsel nach **einem Jahr**; die letzten **drei Passwörter** dürfen nicht wiederverwendet werden.
-- **User Access Management** mit Anzeige der Passwortgültigkeit und vorhandener 2FA-Verwaltung.
-- Rote Warnung auf der Startseite ab **30 Tagen vor Ablauf**.
-- Kontosperre für **zehn Minuten nach zehn aufeinanderfolgenden Fehlversuchen**.
+## Quellstand
 
-**Hinweis beim Update:** Bestehende Konten mit unbekanntem Passwortalter oder Richtlinienstand müssen beim nächsten Aufruf ein neues Passwort setzen. Das bisherige Passwort wird für die Anmeldung und den Wechsel verwendet. Garagendaten und eingerichtete 2FA bleiben erhalten.
-
-### [1.2.0 · Nice Hamster](https://github.com/gravelbiking/Gravelbike_Garage/releases/tag/v1.2.0)
-
-- Neuer Info-Bereich unter Verwaltung mit **Info**, **Releasenotes**, **Handbuch** und **Update**.
-- Nutzungshandbuch mit Schnellstart zum Anlegen eines Fahrrads.
-- Werkstattname dauerhaft im App-Kopf sichtbar.
-- Modulüberschriften am Desktop als Text, auf Mobilgeräten weiterhin als Links.
-- Mobile Navigation fest am unteren Bildschirmrand.
-
-[Alle veröffentlichten Versionen ansehen](https://github.com/gravelbiking/Gravelbike_Garage/releases)
-
-## Ideen und Weiterentwicklung
-
-Rückmeldungen, Fehlerberichte und Funktionswünsche können unter [Issues](https://github.com/gravelbiking/Gravelbike_Garage/issues) eingetragen werden.
+Dies ist eine bereinigte Kopie des freigegebenen Anwendungscodes, einschließlich der mitgelieferten Bibliotheken und ihrer Lizenzdateien. Der lokale Entwicklungsverlauf, lokale Daten, Serverkonfigurationen und persönliche Dokumente sind nicht enthalten. `RELEASE.json` dokumentiert den Bezug zum geprüften Installationspaket. Die Admin-Anwendung ist eine separate Installation und gehört nicht zu diesem Garage-Release.

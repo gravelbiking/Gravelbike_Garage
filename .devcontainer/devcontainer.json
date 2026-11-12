@@ -1,0 +1,14 @@
+{
+  "name": "Gravelbike Garage 1.2.4 · STRAVA bugfixing",
+  "dockerComposeFile": "compose.yaml",
+  "service": "app",
+  "workspaceFolder": "/workspaces/Gravelbike_Garage",
+  "remoteUser": "vscode",
+  "features": {"ghcr.io/devcontainers/features/node:2": {"version": "24"}},
+  "initializeCommand": "python3 .devcontainer/init.py",
+  "postCreateCommand": "node codespace/build.mjs && npm test",
+  "postStartCommand": "python3 codespace/manage.py start",
+  "forwardPorts": [4173],
+  "portsAttributes": {"4173": {"label": "Gravelbike Garage", "onAutoForward": "notify", "visibility": "private", "protocol": "http"}},
+  "shutdownAction": "stopCompose"
+}

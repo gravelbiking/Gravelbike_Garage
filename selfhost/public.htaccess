@@ -1,0 +1,17 @@
+Options -Indexes
+DirectoryIndex index.php
+
+<FilesMatch "^(app\.html|\.user\.ini|.*\.(sqlite|db|log|bak|zip))$">
+    Require all denied
+</FilesMatch>
+
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set Referrer-Policy "same-origin"
+</IfModule>
+
+<IfModule mod_mime.c>
+    AddType application/manifest+json .webmanifest
+    AddType text/javascript .mjs
+    AddType application/wasm .wasm
+</IfModule>
