@@ -1,9 +1,17 @@
 {
   "version": "1.2.5",
   "name": "Horchen und sehen",
-  "status": "testing",
-  "issue": 106,
-  "branch": "feature/106-logging-1.2.5",
+  "status": "released",
+  "issues": [
+    101,
+    103,
+    104,
+    105,
+    106,
+    108
+  ],
+  "release_zip_sha256": "b2122a43f756d5b62e490dced6a5dafc25e9eebf8fadd2aa486b7cc01c6f6d64",
+  "tested_source_sha256": "157caea8a39cf6dffad047c1bab263ef10619de59a5c9d773be6526157d1e899",
   "source_snapshot": "Application source only; no local history, runtime data or server credentials.",
   "base_release": {
     "version": "1.2.4",
@@ -11,6 +19,5 @@
     "release_zip_sha256": "8987c35a6a5df159e218b66833c01a78ae7ecd57a37e6287738ec8b71e503b2a",
     "tested_source_sha256": "87fca2833c26906b600ada8a96fc444b2fc8f8af26c3da461ccfd0aa94aee3df"
   },
-  "release_zip_sha256": null,
-  "note": "Test branch only. No 1.2.5 release ZIP or server deployment has been published."
+  "note": "Sanitized application source and tested Uberspace release. No credentials or runtime data."
 }

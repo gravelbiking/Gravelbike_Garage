@@ -29,6 +29,11 @@ class WorkerTests(unittest.TestCase):
     names=z.namelist();self.assertFalse(any('secret.txt' in x or '/child/' in x for x in names));self.assertTrue(any(x.endswith('setup-key.php') for x in names));self.assertFalse(any(b'PRIVATE DATABASE PASSWORD' in z.read(n) for n in names))
    (b/'garage').unlink();(b/'garage').symlink_to(b/'garage.shared')
    with self.assertRaises(RuntimeError):m.entry('garage')
+ def test_target_domain_routing(self):
+  spec=importlib.util.spec_from_file_location('route_guard',P.parent/'uberspace_remote.py');remote=importlib.util.module_from_spec(spec);spec.loader.exec_module(remote)
+  base=[{'domain':None,'path':'/','destination':'APACHE'}];target={'domain':'garage.example','uberspace_major':8}
+  for extra,expected in [([{'domain':'other.example','path':'/','destination':'PORT'}],True),([{'domain':'garage.example','path':'/','destination':'PORT'}],False),([{'domain':'garage.example','path':'/test1','destination':'PORT'}],False)]:
+   with patch.object(remote,'run',return_value=json.dumps(base+extra)):self.assertEqual(remote.apache_only(target,''),expected)
  def test_admin_and_confirmation_guard(self):
   with tempfile.TemporaryDirectory() as tmp:
    m=w.Manager({'base':tmp,'shared':tmp,'domain':'example.org','user':'test','php':'php'})

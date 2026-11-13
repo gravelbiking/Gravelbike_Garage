@@ -108,7 +108,10 @@ def apache_only(r, routing):
     if r['uberspace_major']==7:
         rows=[line.strip() for line in routing.splitlines() if line.strip()]
         return bool(rows) and all(re.fullmatch(r'\S+\s+apache(?: \(default\))?',line) for line in rows)
-    return bool(re.search(r'\bAPACHE\b',routing)) and not re.search(r'\b(?:STATIC|PORT)\b',routing)
+    rows=json.loads(run(['uberspace','web','backend','list','--json']))
+    if not isinstance(rows,list):return False
+    relevant=[x for x in rows if isinstance(x,dict) and x.get('domain') in [None,'*',r['domain']]]
+    return bool(relevant) and any(x.get('path')=='/' and x.get('destination')=='APACHE' for x in relevant) and all(x.get('destination')=='APACHE' and x.get('path')=='/' for x in relevant)
 
 
 def inspect(r):
