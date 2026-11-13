@@ -1,6 +1,6 @@
 # Gravelbike Garage
 
-**Version 1.2.4 · STRAVA bugfixing**
+**Teststand 1.2.5 · Horchen und sehen**
 
 Eine private Fahrradgarage als Web-App: Fahrräder und verbaute Bauteile verwalten, Serviceintervalle planen, Werkstattaufträge dokumentieren, Ersatzteilbestände führen und Dokumente sicher zuordnen. Die App lässt sich am Mac, auf dem Tablet und Smartphone im Browser oder als installierte Web-App nutzen.
 
@@ -12,6 +12,17 @@ Eine private Fahrradgarage als Web-App: Fahrräder und verbaute Bauteile verwalt
 - **Adressbuch und Dokumente:** Kontakte, Werkstatttermine, Rechnungen, Verträge und technische Unterlagen.
 - **Strava:** Zwei unabhängige Verbindungen mit jeweils eigener Client-ID und eigenem Client-Secret; Fahrräder getrennt zuordnen und Kilometer synchronisieren.
 - **Verwaltung:** Passwortschutz, optionale Zwei-Faktor-Anmeldung, Passkeys/YubiKey, Einstellungen, Handbuch und Versionsinformationen.
+
+## Neu im Teststand 1.2.5 · Horchen und sehen
+
+- Zentrale, strukturierte Fehlerprotokolle für Browser, PHP, interne und externe APIs, Strava und Hintergrunddienste ([Issue #106](https://github.com/gravelbiking/Gravelbike_Garage/issues/106)).
+- Private, getrennte Logströme je Instanz und Modul mit Vorgangs-ID, Maskierung, Rotation und Größenbegrenzung.
+- Admin → Protokolle: Instanz, Modul, Quelle, Schweregrad, Zeitraum und Vorgangs-ID filtern; suchen, blättern, aktualisieren und als TXT exportieren.
+- Strava-Verbindungsversuche mit Client-ID und bereinigter Rückleitungsadresse nachvollziehen. Ausbleibende Rückkehr wird nach Ablauf vom Strava-Job erkannt.
+
+[Technik, Datenschutz und Testanleitung](docs/logging.md) · [Lokaler Prüfbericht](docs/testing-1.2.5-logging.md).
+
+Dieser Branch ist zur Prüfung vorgesehen. Ein neues Installations-ZIP und eine Veröffentlichung auf Uberspace erfolgen separat. Der letzte veröffentlichte Download bleibt v1.2.4.
 
 ## Neu in 1.2.4 · STRAVA bugfixing
 
@@ -30,9 +41,9 @@ Installation mit eigener PHP-/MariaDB-Umgebung: [Installationsanleitung](selfhos
 
 ## Im GitHub Codespace bearbeiten
 
-[Codespace erstellen](https://github.com/codespaces/new?hide_repo_select=true&ref=main&repo=1441876709)
+[Codespace erstellen](https://github.com/codespaces/new?hide_repo_select=true&ref=feature%2F106-logging-1.2.5&repo=1441876709)
 
-1. Codespace für den Branch `main` erstellen. PHP 8.4, Node 24 und eine eigene MariaDB 11.4 werden vorbereitet.
+1. Codespace für den Branch `feature/106-logging-1.2.5` erstellen. PHP 8.4, Node 24 und eine eigene MariaDB 11.4 werden vorbereitet.
 2. Die Einrichtung und die Quellcode-Tests abwarten. Die App startet anschließend automatisch auf **Port 4173**.
 3. Im Tab **Ports** bei 4173 auf **Im Browser öffnen** klicken. Der Port bleibt privat.
 4. Einen eigenen App-Benutzernamen und ein Passwort anlegen. Der für diesen Codespace neu erzeugte Installationsschlüssel ist in der Entwicklungsansicht vorausgefüllt.
@@ -52,4 +63,4 @@ Die Freigabe von Änderungen für Server oder neue GitHub-Releases erfolgt weite
 
 ## Quellstand
 
-Dies ist eine bereinigte Kopie des freigegebenen Anwendungscodes, einschließlich der mitgelieferten Bibliotheken und ihrer Lizenzdateien. Der lokale Entwicklungsverlauf, lokale Daten, Serverkonfigurationen und persönliche Dokumente sind nicht enthalten. `RELEASE.json` dokumentiert den Bezug zum geprüften Installationspaket. Die Admin-Anwendung ist eine separate Installation und gehört nicht zu diesem Garage-Release.
+Dies ist eine bereinigte Kopie des freigegebenen Anwendungscodes, einschließlich der mitgelieferten Bibliotheken und ihrer Lizenzdateien. Der lokale Entwicklungsverlauf, lokale Daten, Serverkonfigurationen und persönliche Dokumente sind nicht enthalten. `RELEASE.json` unterscheidet den Teststand 1.2.5 vom zuletzt geprüften Installationspaket 1.2.4. Die Admin-Anwendung bleibt eine separate Installation; ihr bereinigter Quellcode ist für die neue Logansicht unter `admin/` enthalten. Bestehende Admin-Konfigurationen, Datenbanken, Benutzer und Schlüssel werden nicht mitgeliefert.

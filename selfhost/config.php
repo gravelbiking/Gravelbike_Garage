@@ -25,6 +25,8 @@ return [
     // Only if the server does not already expose HTTPS correctly: exact IPs of
     // verified TLS proxies that overwrite X-Forwarded-Proto. Never use a wildcard.
     'trusted_proxies' => [],
+    // Structured logs: private sibling logs/ directory, rotated per module/source.
+    'logging' => ['retention_days'=>14, 'max_file_bytes'=>2097152, 'max_total_bytes'=>20971520],
     // Uploaded photos and contracts stay outside public/. Records are in MySQL.
     'storage_path' => __DIR__ . '/data',
 ];

@@ -21,7 +21,7 @@ function orderWizardTitle(w){
  return {0:'Werkstattauftrag anlegen',1:'Geplante Arbeit',5:'Arbeitsschritte',6:'Anleitungen',7:'Geplante Durchführung',8:'Zusammenfassung'}[w.page]||'Werkstattauftrag anlegen';
 }
 function openServiceWizard(w){activeServiceWizard=w;modal(w.kind==='plan'?'Serviceintervall anlegen':'Werkstattauftrag anlegen','',()=>{});const form=$('#editor');form.noValidate=true;form.dataset.dirty='true';form.onsubmit=e=>e.preventDefault();let capture=()=>{};
- const wizardError=error=>{let target=form.querySelector('[data-w-error]');if(!target){target=document.createElement('p');target.dataset.wError='';target.className='form-error';target.role='alert';form.append(target);}target.textContent=error.message;};
+ const wizardError=error=>{garageRuntime.log(error,'wizard');let target=form.querySelector('[data-w-error]');if(!target){target=document.createElement('p');target.dataset.wError='';target.className='form-error';target.role='alert';form.append(target);}target.textContent=error.message;};
  const go=(n,check=true)=>{try{if(check)for(const control of form.querySelectorAll('input,select,textarea'))if(!control.checkValidity()){control.reportValidity();return;}capture(check);w.page=n;draw();}catch(e){wizardError(e);}};
  const fields=(html,read=()=>{})=>{form.innerHTML=html;capture=read;};
  const val=(f,k)=>String(f.get(k)||'').trim();

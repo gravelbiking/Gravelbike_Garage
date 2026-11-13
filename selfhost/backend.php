@@ -5,8 +5,12 @@ declare(strict_types=1);
 ini_set('display_errors', '0');
 umask(0027);
 require_once __DIR__ . '/updates.php';
+require_once __DIR__ . '/logging.php';
+gt_log_install();
 
 function gt_json(array $value, int $status = 200): never {
+    if($status>=400&&isset($value['error'])){gt_log($status>=500?'error':'warning','backend',is_string($value['error'])?$value['error']:'Fehlerantwort',['http_status'=>$status]);$value['requestId']=gt_log_id();}
+    header('X-Garage-Request-Id: '.gt_log_id());
     http_response_code($status);
     header('Content-Type: application/json; charset=utf-8');
     echo json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
@@ -14,6 +18,7 @@ function gt_json(array $value, int $status = 200): never {
 }
 
 function gt_headers(): void {
+    header('X-Garage-Request-Id: '.gt_log_id());
     header('Cache-Control: no-store');
     header('X-Content-Type-Options: nosniff');
     header('Referrer-Policy: same-origin');
@@ -464,6 +469,7 @@ function gt_api(): never {
             gt_strava_webhook($method, $matches[1]);
         }
         $route = is_string($path) && str_ends_with($path, '/api.php/strava-callback') ? 'strava/callback' : ($_GET['route'] ?? '');
+        if(is_string($route))gt_log_context(['module'=>gt_log_module(explode('/',$route)[0]),'route'=>explode('/',$route)[0],'method'=>$method]);
         if (!is_string($route)) gt_json(['error' => 'Ungültige Route.'], 400);
         if ($method !== 'GET') {
             gt_origin();
@@ -480,20 +486,16 @@ function gt_api(): never {
         if (str_starts_with($route,'security/')) gt_mfa_route($route,$method);
         if (!gt_session()) gt_json(['error' => 'Bitte mit deinem Benutzernamen und Passwort anmelden.'], 401);
         if ($route === 'client-error' && $method === 'POST') {
-            $entry = gt_body();
-            $context = $entry['context'] ?? 'app'; $kind = $entry['kind'] ?? 'Error';
-            if (!is_string($context) || !preg_match('/^[a-zA-Z0-9_-]{1,40}$/D', $context) || !in_array($kind, ['Error','TypeError','SyntaxError','TimeoutError','AbortError'], true)) gt_json(['error'=>'Ungültiger Fehlerbericht.'],400);
-            // Bound log volume per installation, using a locked private counter.
-            $file = gt_storage() . '/client-log-rate.json';
-            $handle = fopen($file, 'c+');
-            if ($handle && flock($handle, LOCK_EX)) {
-                $rate = json_decode(stream_get_contents($handle) ?: '{}', true) ?: [];
-                $minute = (int)floor(time()/60);
-                $count = ($rate['minute'] ?? 0) === $minute ? (int)($rate['count'] ?? 0) : 0;
-                if ($count < 30) { error_log('Gravelbike Garage client: ' . $context . ' ' . $kind); $count++; }
-                ftruncate($handle,0); rewind($handle); fwrite($handle,json_encode(['minute'=>$minute,'count'=>$count])); flock($handle,LOCK_UN); fclose($handle);
+            $body=gt_body();$entries=$body['entries']??[$body];
+            if(!is_array($entries)||count($entries)>25)gt_json(['error'=>'Ungültiger Fehlerbericht.'],400);
+            $accepted=0;
+            foreach($entries as $entry){
+                if(!is_array($entry)||!is_string($entry['context']??null)||!preg_match('/^[a-zA-Z0-9_-]{1,40}$/D',$entry['context'])||!in_array($entry['kind']??'', ['Error','TypeError','SyntaxError','TimeoutError','AbortError'],true))gt_json(['error'=>'Ungültiger Fehlerbericht.'],400);
+                $module=match($entry['page']??''){ 'parking','bike','service','history','plan','entry','archive','computers','computer'=>'bikes','stock','shopping','purchase'=>'inventory','orders','order','guides','guide','tools'=>'workshop','contact'=>'contacts','configuration','settings','info','backup'=>'administration','users'=>'auth','inventory'=>'inventory','contacts'=>'contacts','documents'=>'documents','strava'=>'strava','dashboard'=>'dashboard',default=>gt_log_module((string)($entry['page']??''))};
+                if(!gt_log((int)($entry['httpStatus']??0)>=400&&(int)($entry['httpStatus']??0)<500?'warning':'error','frontend',$entry['kind'].' in '.$entry['context'],['module'=>$module,'operation'=>$entry['context'],'error_type'=>$entry['kind'],'request_id'=>$entry['requestId']??gt_log_id(),'http_status'=>(int)($entry['httpStatus']??0),'count'=>max(1,min(1000000,(int)($entry['count']??1))),'stack'=>is_array($entry['stack']??null)?array_slice(array_filter($entry['stack'],'is_string'),0,12):[],'first_seen'=>isset($entry['at'])?gmdate('c',min(time(),(int)($entry['at']/1000))):gmdate('c')]))gt_json(['error'=>'Fehlerprotokoll momentan nicht verfügbar.'],503);
+                $accepted++;
             }
-            gt_json(['ok'=>true]);
+            gt_json(['ok'=>true,'accepted'=>$accepted]);
         }
         if ($route === 'strava' || $route === 'strava/callback') gt_strava_route($route, $method);
         if ($route === 'updates') gt_update_route($method);
@@ -550,7 +552,7 @@ function gt_api(): never {
         if (str_starts_with($route, 'files/') && $method === 'GET') gt_file(substr($route, 6));
         gt_json(['error' => 'Nicht gefunden.'], 404);
     } catch (Throwable $e) {
-        error_log('Gravelbike Garage: ' . $e->getMessage());
+        gt_log_exception($e);
         // Installation failures give actionable, non-secret diagnostics.
         $message = ($e instanceof RuntimeException && !($e instanceof PDOException)) ? $e->getMessage() : 'Die Anfrage konnte nicht verarbeitet werden. Bitte Schreibrechte und PHP-Fehlerprotokoll im Hosting prüfen.';
         gt_json(['error' => $message], 500);

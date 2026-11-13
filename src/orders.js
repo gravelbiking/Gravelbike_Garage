@@ -204,7 +204,7 @@ function createOrderStock(row,editor){
     select.innerHTML=orderStockOptions(selected);
    }
    refreshDraftPosition(row);dialog.close();
-  }catch(error){form.querySelector('.form-error').textContent=error.message;}
+  }catch(error){garageRuntime.log(error,'workshop-form');form.querySelector('.form-error').textContent=error.message;}
   finally{unlock();}
  };
  dialog.showModal();

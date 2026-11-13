@@ -48,7 +48,7 @@ function renderStrava(panel,status){
     if(panel.isConnected)await refreshStrava();
    }
   }catch(error){
-   toast(error.message);
+   garageRuntime.log(error,'strava');toast(error.message);
    if(button.dataset.strava==='sync'&&panel.isConnected)await refreshStrava();
   }finally{button.disabled=false;}
  };

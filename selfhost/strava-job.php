@@ -37,6 +37,7 @@ try {
         if($errors)throw new RuntimeException(implode(' ',$errors));
     }
 } catch (Throwable $e) {
+    gt_log_exception($e,'background',['module'=>'strava','operation'=>$command??'sync']);
     fwrite(STDERR, ($e instanceof RuntimeException && !($e instanceof PDOException) ? $e->getMessage() : 'Der Strava-Hintergrundjob ist fehlgeschlagen.')."\n");
     exit(1);
 }
