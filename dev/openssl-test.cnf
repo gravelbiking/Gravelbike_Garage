@@ -1,0 +1,4 @@
+# Minimal config only for the disposable software authenticator's test keys.
+[req]
+distinguished_name = dn
+[dn]

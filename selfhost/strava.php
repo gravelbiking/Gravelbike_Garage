@@ -105,6 +105,8 @@ function gt_strava_configure(array $body): never {
     } finally {
         if (is_file($temporary)) unlink($temporary);
     }
+    gt_log_context(['module'=>'strava','connection'=>$account]);
+    gt_log('info','strava','Strava-API-Konfiguration gespeichert.',['operation'=>'configuration.changed','client_id'=>$id,'previous_client_id'=>(string)($previous['client_id']??''),'base_url'=>$base,'previous_base_url'=>$previous['base_url']??'']);
     if ($changed) {
         unset($state['flow'],$state['subscription'],$state['registrationError']);
         $state['error']='';$state['retry']=0;
@@ -203,6 +205,11 @@ function gt_strava_request(string $path, ?string $token = null, ?array $form = n
     $context = stream_context_create(['http'=>$options,'ssl'=>['verify_peer'=>true,'verify_peer_name'=>true]]);
     $payload = @file_get_contents('https://www.strava.com'.$path, false, $context, 0, 8000001);
     $status = gt_strava_http_status($http_response_header[0] ?? '');
+    if($payload===false||$status<200||$status>=300){
+        $parsed=is_string($payload)?json_decode($payload,true):null;$codes=[];$fields=[];$resources=[];
+        foreach(array_slice(is_array($parsed)?($parsed['errors']??[]):[],0,8) as $e)if(is_array($e))foreach(['resource','field','code'] as $k)if(is_string($e[$k]??null)&&preg_match('/^[a-zA-Z0-9_.-]{1,60}$/D',$e[$k])){if($k==='code')$codes[]=$e[$k];elseif($k==='field')$fields[]=$e[$k];else $resources[]=$e[$k];}
+        gt_log($status>=400&&$status<500?'warning':'error','external-api','Strava-Anfrage fehlgeschlagen.',['module'=>'strava','provider'=>'strava','operation'=>explode('?',$path)[0],'method'=>$options['method'],'http_status'=>$status,'error_code'=>implode(' ',$codes),'provider_field'=>implode(' ',$fields),'provider_resource'=>implode(' ',$resources)]);
+    }
     if ($payload !== false && $allowMissing && $status === 404) return null;
     if ($payload === false || strlen($payload) > 8000000 || $status === 0) throw new RuntimeException('Strava ist vorübergehend nicht erreichbar.');
     if ($status === 429) throw new RuntimeException('Strava hat das Anfragelimit erreicht. Der Abgleich wird später wiederholt.', 429);
@@ -340,6 +347,7 @@ function gt_strava_apply(array &$garage, array &$state, array $rides): bool {
 }
 
 function gt_strava_sync(array $config, array &$state, bool $force, ?callable $request = null): void {
+    gt_log_context(['module'=>'strava','connection'=>$state['account']??1,'client_id'=>$config['id']]);
     $request ??= 'gt_strava_request';
     $events = gt_query('SELECT object_id,marker FROM {{strava_events}} WHERE account_id = ? ORDER BY object_id LIMIT 50', [$state['account'] ?? 1])->fetchAll(PDO::FETCH_ASSOC);
     if ($events && (string)$events[0]['object_id'] === '0') {
@@ -399,7 +407,13 @@ function gt_strava_sync_accounts(?array $unusedLegacyConfig = null, ?callable $r
         $lock = gt_strava_lock($account);
         if (!$lock) continue;
         try {
+            gt_log_context(['module'=>'strava','connection'=>$account,'client_id'=>null,'attempt_id'=>null,'request_id'=>null]);
             $state = gt_strava_state($account);
+            $flow=$state['flow']??[];
+            if(isset($flow['expires'])&&$flow['expires']<time()&&empty($flow['logged_expired'])){
+                gt_log('warning','strava','OAuth-Versuch ohne Rückkehr abgelaufen.',['module'=>'strava','operation'=>'oauth.expired','connection'=>$account,'attempt_id'=>$flow['attempt_id']??'','request_id'=>$flow['request_id']??gt_log_id()]);
+                $state['flow']['logged_expired']=true;gt_strava_save($state);
+            }
             $config = gt_strava_config($account);
             if (!$config) continue;
             if (($state['worker'] ?? 0) < time()-300) {
@@ -407,6 +421,7 @@ function gt_strava_sync_accounts(?array $unusedLegacyConfig = null, ?callable $r
             }
             gt_strava_sync($config,$state,false,$request);
         } catch (Throwable $e) {
+            gt_log_exception($e,'background',['module'=>'strava','connection'=>$account,'operation'=>'sync']);
             $errors[] = 'Verbindung '.$account.': '.($e instanceof RuntimeException && !($e instanceof PDOException) ? $e->getMessage() : 'Abgleich fehlgeschlagen.');
         } finally { flock($lock,LOCK_UN); fclose($lock); }
     }
@@ -480,6 +495,8 @@ function gt_strava_callback(array $config, array $state): never {
         !hash_equals($flow['session'], hash('sha256', $_COOKIE[gt_cookie_name('session')]))) {
         gt_json(['error'=>'Der Strava-Verbindungsversuch ist ungültig oder abgelaufen. Bitte in der Garage neu starten.'], 400);
     }
+    gt_log_context(['module'=>'strava','connection'=>$state['account']??1,'attempt_id'=>$flow['attempt_id']??'','request_id'=>$flow['request_id']??gt_log_id()]);
+    gt_log('info','strava','OAuth-Rückkehr empfangen.',['operation'=>'oauth.callback']);
     unset($state['flow']);
     gt_strava_save($state);
     $code = $_GET['code'] ?? '';
@@ -494,12 +511,14 @@ function gt_strava_callback(array $config, array $state): never {
             try {
                 gt_strava_register($config, $state);
             } catch (RuntimeException $e) {
+                gt_log_exception($e,'strava',['module'=>'strava','operation'=>'webhook.register']);
                 $state['registrationError'] = $e instanceof PDOException ? 'Der automatische Import konnte nicht gespeichert werden.' : $e->getMessage();
                 gt_strava_save($state);
             }
             $status = 'connected';
         } catch (RuntimeException $e) {
             $status = 'failed';
+            gt_log_exception($e,'strava',['module'=>'strava','operation'=>'oauth.exchange']);
             $state['error'] = $e instanceof PDOException ? 'Die Strava-Verbindung konnte nicht gespeichert werden.' : $e->getMessage();
             gt_strava_save($state);
         }
@@ -553,6 +572,7 @@ function gt_strava_route(string $route, string $method): never {
         if (!$settingsLock) gt_json(['error'=>'Strava-Einstellungen werden gerade gespeichert. Bitte erneut versuchen.'],409);
         gt_strava_configure($body);
     }
+    gt_log_context(['module'=>'strava','connection'=>$account]);
     $config = gt_strava_config($account);
     if (!$config) gt_json(['error'=>'Richte zuerst die eigenen API-Zugangsdaten für Strava-Verbindung '.$account.' ein.'],409);
     $state = gt_strava_state($account);
@@ -564,8 +584,9 @@ function gt_strava_route(string $route, string $method): never {
     }
     if ($action === 'connect') {
         $nonce = bin2hex(random_bytes(32));
-        $state['flow'] = ['nonce'=>hash('sha256',$nonce),'session'=>hash('sha256',$_COOKIE[gt_cookie_name('session')]),'expires'=>time()+600];
+        $state['flow'] = ['nonce'=>hash('sha256',$nonce),'session'=>hash('sha256',$_COOKIE[gt_cookie_name('session')]),'expires'=>time()+600,'attempt_id'=>bin2hex(random_bytes(8)),'request_id'=>gt_log_id()];
         gt_strava_save($state);
+        gt_log('info','strava','Strava-Verbindungsversuch gestartet.',['module'=>'strava','operation'=>'oauth.start','connection'=>$account,'client_id'=>$config['id'],'redirect_uri'=>$config['base'].'/api.php/strava-callback','attempt_id'=>$state['flow']['attempt_id'],'expires_at'=>$state['flow']['expires']]);
         gt_json(['url'=>'https://www.strava.com/oauth/authorize?'.http_build_query([
             'client_id'=>$config['id'], 'redirect_uri'=>$config['base'].'/api.php/strava-callback',
             'response_type'=>'code', 'scope'=>'activity:read,activity:read_all,profile:read_all',

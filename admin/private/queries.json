@@ -1,0 +1,13 @@
+[
+  "SELECT instance AS metric,disk_bytes AS value FROM ga_metrics WHERE instance_id<>'admin' AND ts=(SELECT MAX(ts) FROM ga_metrics) AND ('${instanz:raw}'='__all__' OR instance_id='${instanz:raw}') ORDER BY instance",
+  "SELECT instance AS metric,db_bytes AS value FROM ga_metrics WHERE instance_id<>'admin' AND ts=(SELECT MAX(ts) FROM ga_metrics) AND ('${instanz:raw}'='__all__' OR instance_id='${instanz:raw}') ORDER BY instance",
+  "SELECT MAX(quota_used)*100.0/NULLIF(MAX(quota_limit),0) AS value FROM ga_metrics WHERE ts=(SELECT MAX(ts) FROM ga_metrics)",
+  "SELECT MAX(ram_used)*100.0/NULLIF(MAX(ram_limit),0) AS value FROM ga_metrics WHERE ts=(SELECT MAX(ts) FROM ga_metrics)",
+  "SELECT CONCAT('von ',COUNT(*)) AS metric,SUM(healthy) AS value FROM ga_metrics WHERE instance_id<>'admin' AND ts=(SELECT MAX(ts) FROM ga_metrics) AND ('${instanz:raw}'='__all__' OR instance_id='${instanz:raw}')",
+  "SELECT SUM(db_bytes) AS value FROM ga_metrics WHERE instance_id<>'admin' AND ts=(SELECT MAX(ts) FROM ga_metrics) AND ('${instanz:raw}'='__all__' OR instance_id='${instanz:raw}')",
+  "SELECT SUM(disk_bytes) AS value FROM ga_metrics WHERE instance_id<>'admin' AND ts=(SELECT MAX(ts) FROM ga_metrics) AND ('${instanz:raw}'='__all__' OR instance_id='${instanz:raw}')",
+  "SELECT ts AS time,instance AS metric,disk_bytes AS value FROM ga_metrics WHERE instance_id<>'admin' AND $__timeFilter(ts) AND ('${instanz:raw}'='__all__' OR instance_id='${instanz:raw}') ORDER BY ts",
+  "SELECT ts AS time,instance AS metric,db_bytes AS value FROM ga_metrics WHERE instance_id<>'admin' AND $__timeFilter(ts) AND ('${instanz:raw}'='__all__' OR instance_id='${instanz:raw}') ORDER BY ts",
+  "SELECT ts AS time,instance AS metric,healthy AS value FROM ga_metrics WHERE instance_id<>'admin' AND $__timeFilter(ts) AND ('${instanz:raw}'='__all__' OR instance_id='${instanz:raw}') ORDER BY ts",
+  "SELECT ts AS time,instance AS metric,db_latency_ms AS value FROM ga_metrics WHERE instance_id<>'admin' AND $__timeFilter(ts) AND ('${instanz:raw}'='__all__' OR instance_id='${instanz:raw}') ORDER BY ts"
+]
