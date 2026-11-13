@@ -46,7 +46,7 @@ await Promise.all([
  writeFile(join(upload,'index.php'),"<?php\nheader('Location: public/', true, 302);\nexit;\n"),
  writeFile(join(priv,'data','.keep'),''),writeFile(join(priv,'protection-check.txt'),'GRAVELBIKE_GARAGE_PRIVATE_DO_NOT_EXPOSE\n'),
 ]);
-for(const [from,name] of [['selfhost/check-hosting.php','check-hosting.php'],['selfhost/mfa.php','mfa.php'],['selfhost/biography.php','biography.php'],['selfhost/schema.sql','schema.sql'],['selfhost/backend.php','backend.php'],['selfhost/updates.php','updates.php'],['selfhost/administration.php','administration.php'],['selfhost/features.php','features.php'],['selfhost/workshop.php','workshop.php'],['selfhost/inventory-report.php','inventory-report.php'],['selfhost/config.php','config.php'],['selfhost/strava.php','strava.php'],['selfhost/strava-job.php','strava-job.php']]){
+for(const [from,name] of [['selfhost/logging.php','logging.php'],['selfhost/check-hosting.php','check-hosting.php'],['selfhost/mfa.php','mfa.php'],['selfhost/biography.php','biography.php'],['selfhost/schema.sql','schema.sql'],['selfhost/backend.php','backend.php'],['selfhost/updates.php','updates.php'],['selfhost/administration.php','administration.php'],['selfhost/features.php','features.php'],['selfhost/workshop.php','workshop.php'],['selfhost/inventory-report.php','inventory-report.php'],['selfhost/config.php','config.php'],['selfhost/strava.php','strava.php'],['selfhost/strava-job.php','strava-job.php']]){
  if(name==='config.php'&&preserveConfig&&existsSync(join(priv,name)))continue;
  await copyFile(join(project,from),join(priv,name));
 }

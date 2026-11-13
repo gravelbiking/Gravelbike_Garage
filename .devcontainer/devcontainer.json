@@ -1,5 +1,5 @@
 {
-  "name": "Gravelbike Garage 1.2.4 · STRAVA bugfixing",
+  "name": "Gravelbike Garage 1.2.5 · Horchen und sehen",
   "dockerComposeFile": "compose.yaml",
   "service": "app",
   "workspaceFolder": "/workspaces/Gravelbike_Garage",
