@@ -178,8 +178,10 @@ function readOrderDraftPart(row,order){
  const count=quantity(rawCount);
  if(!name||!count)throw Error('Bitte alle Ersatzteile benennen und eine positive Menge angeben.');
  const positionId=row.querySelector('[data-part-position]').value;
- const updated={id,stepId:row.closest('[data-work-step]')?.dataset.workStep||'',inventoryId:item?.id||'',positionId,
+ const updated={...previous,id,stepId:row.closest('[data-work-step]')?.dataset.workStep||'',inventoryId:item?.id||'',positionId,
   name,unit,quantity:count,tirePosition:row.querySelector('[data-tire-position]').value};
+ updated.procurement=item?'':previous?.procurement||'';
+ if(item&&previous?.inventoryId!==item.id)for(const field of ['manufacturer','model','articleNumber','serial'])delete updated[field];
  updated.available=Boolean(previous?.available&&previous.inventoryId===updated.inventoryId&&
   (previous.positionId||'')===positionId&&previous.quantity===count&&previous.name===name&&previous.unit===updated.unit);
  return updated;
@@ -268,10 +270,10 @@ function orderPartRow(o,part){
  const step=o.steps.find(step=>step.id===part.stepId);
  const photo=item?.photo?`<img width="640" height="400" class="order-part-photo" src="/api/files/${esc(item.photo)}" alt="${esc(name)}">`:'';
  return `<div class="list-row order-part">${photo}<div class="row-copy">
- <strong>${esc([item?.manufacturer,name].filter(Boolean).join(' '))}</strong>
- <small>Artikelnummer · ${esc(item?.articleNumber||'na')}</small>
+ <strong>${esc([item?.manufacturer||part.manufacturer,name].filter(Boolean).join(' '))}</strong>
+ <small>Artikelnummer · ${esc(item?.articleNumber||part.articleNumber||'na')}</small>
  <small>Menge · ${amount(part.quantity)} ${esc(part.unit)}</small>
- <small>Lagerort · ${esc(location||'na')}${step?' · '+esc(step.title):''}</small>
+ <small>${part.procurement==='external'?'Extern beschafft – ohne Einlagerung':'Lagerort · '+esc(location||'na')}${step?' · '+esc(step.title):''}</small>
  ${item?`<button class="small-button" type="button" data-order-stock-preview="${esc(item.id)}">Lagerartikel als Vorschau öffnen ↗</button>`:''}
  ${part.booking?'<small>Ausgebucht</small>':item&&((position?.quantity??item.quantity)<part.quantity)?'<small class="stock-low">Lagerbestand reicht nicht</small>':''}</div>
  ${orderCheckbox(o,part,'part','Vorhanden',name,part.available)}</div>`;
@@ -342,7 +344,9 @@ function finishWorkshopOrder(id,action='complete'){
   return `${esc(part.name)} · ${amount(part.quantity)} ${esc(part.unit)} · ${esc(position?.location||'Lagerort offen')}`;
  };
  const installable=b?o.parts.filter(part=>(part.available||part.booking)&&!stockItem(part.inventoryId)?.positions.find(p=>p.id===part.positionId)?.tire):[];
- const installFields=action==='complete'&&b&&rows.length?`<h3>Neue Bauteile am Fahrrad speichern</h3><p class="help">Ordne eingebaute Ersatzteile dem ausgebauten Bauteil zu. Verbrauchsmaterial bleibt ohne Zuordnung. Das alte Bauteil muss unten als ausgebaut markiert sein.</p>${installable.map((part,index)=>select('installPart'+index,part.name,[['','Nicht als Bauteil übernehmen'],...rows.map(({key,component})=>[key,component.name+' · '+(component.manufacturer||'na')])],'')).join('')}`:'';
+ const suggested=new Map(installable.map(part=>[part.id,suggestedWorkshopReplacement(data,o,part)]));
+ const required=new Set(requiredWorkshopReplacements(data,o).map(p=>p.id));
+ const installFields=action==='complete'&&b&&rows.length?`<h3>Bauteiltausch bestätigen</h3><p class="help">Die geplante Zuordnung ist vorausgefüllt. Prüfe für jedes Ersatzteil, welches Bauteil ersetzt wird. Kennzeichne Verbrauchsmaterial ausdrücklich.</p>${installable.map((part,index)=>select('installPart'+index,part.name,[['',required.has(part.id)?'Bitte Zuordnung wählen':'Kein Bauteiltausch'],['__consumable__','Nur Verbrauchsmaterial / kein Bauteiltausch'],...rows.map(({key,component})=>[key,component.name+' · '+(component.manufacturer||'na')])],suggested.get(part.id)||'').replace('<select ',`<select data-install-part ${required.has(part.id)?'required':''} `)).join('')}<div class="exchange-preview" data-exchange-preview aria-live="polite"></div><label class="document-choice" data-exchange-confirm hidden><input type="checkbox" name="exchangeConfirm"> Ich bestätige den angezeigten Ausbau und Einbau.</label>`:'';
  const titles={complete:'Auftrag abschließen',pause:'Auftrag pausieren',cancel:'Auftrag abbrechen',resume:'Auftrag fortsetzen'};
  const dateField=input('workDate','Datum',today(),'date',`required max="${today()}"`);
  const choice=action==='pause'?'Zurück ins Lager?':'Verbraucht';
@@ -352,13 +356,20 @@ function finishWorkshopOrder(id,action='complete'){
  ${action==='resume'?'':`<h3>Als vorhanden markierte Ersatzteile</h3>${choices||'<p class="help">Keine offenen Entnahmen markiert.</p>'}`}
  ${action==='pause'||action==='cancel'?`<label>${action==='pause'?'Grund der Unterbrechung':'Abbruchgrund'}<textarea name="workComment" maxlength="1000"></textarea></label>`:''}
  ${action==='complete'?`${b?input('completedKm','Kilometerstand beim Abschluss',b.km,'number',`required min="${b.km}" step="0.1"`):''}
- ${installFields}${rows.map(({component:c,key},index)=>`<div data-tire-choice="${esc(key)}"><label class="document-choice"><input type="checkbox" name="removedKeys" value="${esc(key)}"> Ausgebaut · ${esc(c.name)} · ${esc(c.manufacturer||'na')}</label>${componentCategory(c)==='Reifen'?`<div class="form-grid">${select('tireMode'+index,'Ausgebauten Reifen',[['','Bitte auswählen'],['stock','Wieder einlagern'],['archive','Archivieren']], '')}${select('tireStock'+index,'Lagerartikel',[['','Neuen Reifenartikel anlegen'],...data.inventory.filter(s=>s.category==='Reifen'&&s.unit==='Stück').map(s=>[s.id,[s.manufacturer,s.name].filter(Boolean).join(' · ')])],'')}${input('tireLocation'+index,'Lagerort','','text','maxlength="300"')}</div>`:''}</div>`).join('')}`:''}`,async f=>{
+ ${installFields}${rows.map(({component:c,key},index)=>`<div data-tire-choice="${esc(key)}"><label class="document-choice"><input type="checkbox" name="removedKeys" value="${esc(key)}" ${[...suggested.values()].includes(key)?'checked':''}> Ausgebaut · ${esc(c.name)} · ${esc(c.manufacturer||'na')}</label>${componentCategory(c)==='Reifen'?`<div class="form-grid">${select('tireMode'+index,'Ausgebauten Reifen',[['','Bitte auswählen'],['stock','Wieder einlagern'],['archive','Archivieren']], '')}${select('tireStock'+index,'Lagerartikel',[['','Neuen Reifenartikel anlegen'],...data.inventory.filter(s=>s.category==='Reifen'&&s.unit==='Stück').map(s=>[s.id,[s.manufacturer,s.name].filter(Boolean).join(' · ')])],'')}${input('tireLocation'+index,'Lagerort','','text','maxlength="300"')}</div>`:''}</div>`).join('')}`:''}`,async f=>{
   const day=f.get('workDate');
   if(day>today())throw Error('Das Datum darf nicht in der Zukunft liegen.');
   const tireChoices={};rows.forEach(({key,component},index)=>{if(componentCategory(component)==='Reifen'&&f.getAll('removedKeys').includes(key))tireChoices[key]={mode:f.get('tireMode'+index),inventoryId:f.get('tireStock'+index),location:f.get('tireLocation'+index)};});
+  if(action==='complete'&&installable.some((part,index)=>{const value=f.get('installPart'+index);return value&&value!=='__consumable__';})&&!f.get('exchangeConfirm'))throw Error('Bitte den angezeigten Ausbau und Einbau bestätigen.');
   const next=settleWorkshopOrder(data,id,action,f.getAll('workPart'),day,f.get('workComment')||'',f.getAll('removedKeys'),b?kmFromInput(f.get('completedKm'),b.km):null,tireChoices,installable.flatMap((part,index)=>f.get('installPart'+index)?[{partId:part.id,replacedKey:f.get('installPart'+index)}]:[]));
   if(await mutate(()=>{data.bikes=next.bikes;data.orders=next.orders;data.inventory=next.inventory;data.plans=next.plans;})){closeModal();toast('Auftrag '+workEventLabel[action].toLowerCase()+'.');}
  });
+ const editor=$('#editor'),preview=editor.querySelector('[data-exchange-preview]');
+ if(preview){const update=()=>{
+  const pairs=installable.flatMap((part,index)=>{const key=editor.elements['installPart'+index].value,old=rows.find(r=>r.key===key)?.component;return old?[{part,old}]:[];});
+  preview.innerHTML=pairs.length?pairs.map(({part,old})=>`<p><strong>Ausbau:</strong> ${esc([old.manufacturer,old.name,old.model].filter(Boolean).join(' · '))}<br><strong>Einbau:</strong> ${esc([stockItem(part.inventoryId)?.manufacturer||part.manufacturer,stockItem(part.inventoryId)?.name||part.model||part.name].filter(Boolean).join(' · '))}</p>`).join(''):'<p>Kein Bauteiltausch ausgewählt.</p>';
+  const confirm=editor.querySelector('[data-exchange-confirm]');confirm.hidden=!pairs.length;confirm.querySelector('input').required=!!pairs.length;confirm.querySelector('input').checked=false;
+ };editor.querySelectorAll('[data-install-part]').forEach(el=>el.onchange=()=>{const remove=[...editor.querySelectorAll('[name=removedKeys]')].find(box=>box.value===el.value);if(remove)remove.checked=true;update();});update();}
  const submit=$('#editor [type="submit"]');submit.textContent=titles[action];
  if(action==='cancel')submit.className='danger';
 }

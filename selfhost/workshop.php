@@ -111,6 +111,9 @@ function gt_validate_workshop(array $data, array $bikes): bool {
                 || !gt_feature_text($part['name'] ?? null, 800) || trim($part['name']) === ''
                 || !gt_feature_text($part['inventoryId'] ?? null, 200) || !in_array($part['unit'] ?? '', $units, true)
                 || !gt_supply_number($part['quantity'] ?? null) || $part['quantity'] <= 0) return false;
+            foreach(['manufacturer','model','articleNumber','serial'] as $field)if(isset($part[$field])&&!gt_feature_text($part[$field],800))return false;
+            if(isset($part['procurement'])&&!in_array($part['procurement'],['','external'],true))return false;
+            if(($part['procurement']??'')==='external'&&($part['inventoryId']!==''||!empty($part['positionId'])))return false;
             if (array_key_exists('available', $part) && !is_bool($part['available'])) return false;
             if ($part['inventoryId'] !== '' && ($inventory[$part['inventoryId']]['unit'] ?? null) !== $part['unit']) return false;
             if (isset($part['stepId']) && (!gt_feature_text($part['stepId'], 200) || ($part['stepId'] !== '' && !isset($stepIds[$part['stepId']])))) return false;
@@ -153,7 +156,22 @@ function gt_workshop_installations(array $before,array $after): bool {
         if(!is_array($records)||!array_is_list($records)||count($records)>500)return false;
         $old=$oldOrders[$o['id']]??null;
         if(!empty($old['completedAt'])){if($records!==($old['installations']??[]))return false;continue;}
+        $consumables=$o['consumablePartIds']??[];
+        if(!is_array($consumables)||!array_is_list($consumables)||count($consumables)!==count(array_unique($consumables,SORT_REGULAR)))return false;
+        if(!empty($o['completedAt'])){
+            $partsById=array_column($o['parts'],null,'id');$stepsById=array_column($o['steps'],null,'id');
+            foreach($consumables as $id)if(!is_string($id)||empty($partsById[$id]['booking']))return false;
+            foreach($o['parts'] as $part){
+                $step=$stepsById[$part['stepId']??'']??null;$stock=$stocks[$part['inventoryId']]??null;$position=array_column($stock['positions']??[],null,'id')[$part['positionId']??'']??null;
+                if(!empty($step['componentKey'])&&!isset($position['tire'])){
+                    $needed=!empty($part['booking']);
+                    if($needed&&!in_array($part['id'],array_column($records,'partId'),true)&&!in_array($part['id'],$consumables,true))return false;
+                    if(in_array($step['componentKey'],$o['removedKeys']??[],true)&&!$needed)return false;
+                }
+            }
+        }elseif($consumables)return false;
         if(!$records)continue;
+        if(($o['exchangeConfirmed']??false)!==true)return false;
         $b=$bikes[$o['bikeId']]??null;$original=$oldBikes[$o['bikeId']]??null;
         if(!$old||!$b||!$original||empty($o['completedAt'])||$old['bikeId']!==$o['bikeId'])return false;
         $parts=array_column($o['parts'],null,'id');$components=[];$seenParts=[];$seenKeys=[];
@@ -164,8 +182,8 @@ function gt_workshop_installations(array $before,array $after): bool {
             if(!$part||empty($part['booking'])||!$oldComponent||!in_array($key,$o['removedKeys']??[],true)||isset($seenParts[$part['id']])||isset($seenKeys[$key]))return false;
             $stock=$stocks[$part['inventoryId']]??null;$position=array_column($stock['positions']??[],null,'id')[$part['positionId']??'']??null;
             if(isset($position['tire']))return false;
-            $component=['id'=>'installed:'.$o['id'].':'.$part['id'],'name'=>$oldComponent['name'],'category'=>gt_bio_category($oldComponent),'manufacturer'=>$stock['manufacturer']??'','model'=>$stock['name']??$part['name'],'serial'=>'',
-                'originalPartNumber'=>$stock['articleNumber']??'','price'=>$position['unitPrice']??$stock['unitPrice']??null,'lastPurchasedAt'=>$position['supplier']??'','installedDate'=>$o['completedAt'],'installedKm'=>$o['completedKm'],
+            $component=['id'=>'installed:'.$o['id'].':'.$part['id'],'name'=>$oldComponent['name'],'category'=>gt_bio_category($oldComponent),'manufacturer'=>$stock['manufacturer']??$part['manufacturer']??'','model'=>$stock['name']??$part['model']??$part['name'],'serial'=>$part['serial']??'',
+                'originalPartNumber'=>$stock['articleNumber']??$part['articleNumber']??'','price'=>$position['unitPrice']??$stock['unitPrice']??null,'lastPurchasedAt'=>$position['supplier']??'','installedDate'=>$o['completedAt'],'installedKm'=>$o['completedKm'],
                 'sourceOrderId'=>$o['id'],'sourceOrderPartId'=>$part['id'],'sourceInventoryId'=>$part['inventoryId']];
             if(($record['component']??null)!=$component)return false;
             $matches=array_values(array_filter($b['components'],fn($c)=>($c['id']??'')===$component['id']));

@@ -1,6 +1,6 @@
 # Gravelbike Garage
 
-**Teststand 1.2.5 · Horchen und sehen**
+**Version 1.2.5 · Horchen und sehen**
 
 Eine private Fahrradgarage als Web-App: Fahrräder und verbaute Bauteile verwalten, Serviceintervalle planen, Werkstattaufträge dokumentieren, Ersatzteilbestände führen und Dokumente sicher zuordnen. Die App lässt sich am Mac, auf dem Tablet und Smartphone im Browser oder als installierte Web-App nutzen.
 
@@ -13,8 +13,13 @@ Eine private Fahrradgarage als Web-App: Fahrräder und verbaute Bauteile verwalt
 - **Strava:** Zwei unabhängige Verbindungen mit jeweils eigener Client-ID und eigenem Client-Secret; Fahrräder getrennt zuordnen und Kilometer synchronisieren.
 - **Verwaltung:** Passwortschutz, optionale Zwei-Faktor-Anmeldung, Passkeys/YubiKey, Einstellungen, Handbuch und Versionsinformationen.
 
-## Neu im Teststand 1.2.5 · Horchen und sehen
+## Neu in 1.2.5 · Horchen und sehen
 
+- **Werkstatt:** Lagerartikelanlage oder Beschaffung ohne Einlagerung (#101).
+- **Ersatzteile finden:** Kategorie, Suche nach Name/Hersteller/Modell/Artikelnummer, Hersteller-/Teileart-/Bestandsfilter und acht Ergebnisse pro Seite (#104).
+- **Bauteilwechsel:** eindeutige Zuordnung vorausfüllen, Ausbau/Einbau bestätigen, Fahrradstand und Lebenslauf gemeinsam mit Materialverbrauch speichern (#103).
+- **Navigation:** auffälliger Startseiten-Button in der gemeinsamen Kopfzeile (#105).
+- **Serviceintervall:** aktueller Kilometerstand bei kilometerabhängiger Fälligkeit, maximal eine Nachkommastelle (#108).
 - Zentrale, strukturierte Fehlerprotokolle für Browser, PHP, interne und externe APIs, Strava und Hintergrunddienste ([Issue #106](https://github.com/gravelbiking/Gravelbike_Garage/issues/106)).
 - Private, getrennte Logströme je Instanz und Modul mit Vorgangs-ID, Maskierung, Rotation und Größenbegrenzung.
 - Admin → Protokolle: Instanz, Modul, Quelle, Schweregrad, Zeitraum und Vorgangs-ID filtern; suchen, blättern, aktualisieren und als TXT exportieren.
@@ -22,7 +27,7 @@ Eine private Fahrradgarage als Web-App: Fahrräder und verbaute Bauteile verwalt
 
 [Technik, Datenschutz und Testanleitung](docs/logging.md) · [Lokaler Prüfbericht](docs/testing-1.2.5-logging.md).
 
-Dieser Branch ist zur Prüfung vorgesehen. Ein neues Installations-ZIP und eine Veröffentlichung auf Uberspace erfolgen separat. Der letzte veröffentlichte Download bleibt v1.2.4.
+Alle Änderungen: [Releasenotes 1.2.5](docs/releases/1.2.5.md).
 
 ## Neu in 1.2.4 · STRAVA bugfixing
 
@@ -35,15 +40,15 @@ Dieser Branch ist zur Prüfung vorgesehen. Ein neues Installations-ZIP und eine 
 
 ## Download für Uberspace
 
-Das geprüfte Installationspaket und die zugehörige SHA-256-Prüfsumme stehen im [Release v1.2.4](https://github.com/gravelbiking/Gravelbike_Garage/releases/tag/v1.2.4).
+Das geprüfte Installationspaket und die zugehörige SHA-256-Prüfsumme stehen im [Release v1.2.5](https://github.com/gravelbiking/Gravelbike_Garage/releases/tag/v1.2.5).
 
 Installation mit eigener PHP-/MariaDB-Umgebung: [Installationsanleitung](selfhost/INSTALLATION.md). Das ZIP enthält keine Zugangsdaten und keine Nutzerdaten. Für eine neue Installation müssen eigene Datenbankzugänge und ein eigener Installationsschlüssel konfiguriert werden.
 
 ## Im GitHub Codespace bearbeiten
 
-[Codespace erstellen](https://github.com/codespaces/new?hide_repo_select=true&ref=feature%2F106-logging-1.2.5&repo=1441876709)
+[Codespace erstellen](https://github.com/codespaces/new?hide_repo_select=true&ref=main&repo=1441876709)
 
-1. Codespace für den Branch `feature/106-logging-1.2.5` erstellen. PHP 8.4, Node 24 und eine eigene MariaDB 11.4 werden vorbereitet.
+1. Codespace für den Branch `main` erstellen. PHP 8.4, Node 24 und eine eigene MariaDB 11.4 werden vorbereitet.
 2. Die Einrichtung und die Quellcode-Tests abwarten. Die App startet anschließend automatisch auf **Port 4173**.
 3. Im Tab **Ports** bei 4173 auf **Im Browser öffnen** klicken. Der Port bleibt privat.
 4. Einen eigenen App-Benutzernamen und ein Passwort anlegen. Der für diesen Codespace neu erzeugte Installationsschlüssel ist in der Entwicklungsansicht vorausgefüllt.
@@ -63,4 +68,4 @@ Die Freigabe von Änderungen für Server oder neue GitHub-Releases erfolgt weite
 
 ## Quellstand
 
-Dies ist eine bereinigte Kopie des freigegebenen Anwendungscodes, einschließlich der mitgelieferten Bibliotheken und ihrer Lizenzdateien. Der lokale Entwicklungsverlauf, lokale Daten, Serverkonfigurationen und persönliche Dokumente sind nicht enthalten. `RELEASE.json` unterscheidet den Teststand 1.2.5 vom zuletzt geprüften Installationspaket 1.2.4. Die Admin-Anwendung bleibt eine separate Installation; ihr bereinigter Quellcode ist für die neue Logansicht unter `admin/` enthalten. Bestehende Admin-Konfigurationen, Datenbanken, Benutzer und Schlüssel werden nicht mitgeliefert.
+Dies ist eine bereinigte Kopie des freigegebenen Anwendungscodes, einschließlich der mitgelieferten Bibliotheken und ihrer Lizenzdateien. Der lokale Entwicklungsverlauf, lokale Daten, Serverkonfigurationen und persönliche Dokumente sind nicht enthalten. `RELEASE.json` dokumentiert die Version und die Prüfsumme des Installationspakets. Die Admin-Anwendung bleibt eine separate Installation; ihr bereinigter Quellcode ist für die neue Logansicht unter `admin/` enthalten. Bestehende Admin-Konfigurationen, Datenbanken, Benutzer und Schlüssel werden nicht mitgeliefert.

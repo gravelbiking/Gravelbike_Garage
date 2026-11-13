@@ -225,11 +225,27 @@ export function completeWorkshopOrder(garage,orderId,removedKeys,date,km,tireCho
  return next;
 }
 
+export function requiredWorkshopReplacements(garage,order){
+ const b=garage.bikes.find(b=>b.id===order.bikeId),keys=new Set(plannedOrderComponents(b).map(r=>r.key));
+ return order.parts.filter(part=>{
+  const step=order.steps.find(s=>s.id===part.stepId),stock=garage.inventory.find(s=>s.id===part.inventoryId);
+  const position=stock?.positions.find(p=>p.id===part.positionId)||(!part.positionId&&stock?.positions.length===1?stock.positions[0]:null);
+  return (part.available||part.booking)&&step?.componentKey&&keys.has(step.componentKey)&&!position?.tire;
+ });
+}
+export function suggestedWorkshopReplacement(garage,order,part){
+ const eligible=requiredWorkshopReplacements(garage,order),step=order.steps.find(s=>s.id===part.stepId);
+ return eligible.includes(part)&&eligible.filter(p=>order.steps.find(s=>s.id===p.stepId)?.componentKey===step.componentKey).length===1?step.componentKey:'';
+}
 export function settleWorkshopOrder(garage,orderId,action,selectedIds,date,comment,removedKeys=[],km=null,tireChoices={},installations=[]){
  const current=garage.orders.find(order=>order.id===orderId);
  if(!current||current.completedAt||current.cancelledAt)throw Error('Der Auftrag ist bereits beendet oder fehlt.');
  if(!['complete','pause','cancel','resume'].includes(action)||!validISODate(date)||comment.length>1000)throw Error('Bitte Datum und Auftragsgrund prüfen.');
  if(action==='resume'&&!current.pausedAt||action==='pause'&&current.pausedAt)throw Error('Dieser Statuswechsel ist nicht möglich.');
+ if(action==='complete'){
+  for(const part of requiredWorkshopReplacements(garage,current))if(!installations.some(x=>x.partId===part.id&&x.replacedKey))throw Error('Bitte den Austausch für '+part.name+' zuordnen oder ausdrücklich als Verbrauchsmaterial kennzeichnen.');
+  for(const step of current.steps)if(removedKeys.includes(step.componentKey)&&current.parts.some(p=>p.stepId===step.id)&&!current.parts.some(p=>p.stepId===step.id&&(p.available||p.booking)))throw Error('Bitte das benötigte Ersatzteil zuerst als vorhanden bestätigen oder die Ersatzteilplanung korrigieren.');
+ }
  const next=action==='complete'?completeWorkshopOrder(garage,orderId,removedKeys,date,km,tireChoices):structuredClone(garage);
  const order=next.orders.find(o=>o.id===orderId),selected=new Set(selectedIds);
  const parts=order.parts.filter(part=>part.available&&!part.booking);
@@ -269,15 +285,16 @@ export function settleWorkshopOrder(garage,orderId,action,selectedIds,date,comme
   if(action!=='complete'||!order.bikeId)throw Error('Bauteile können nur beim Abschluss am eigenen Fahrrad eingebaut werden.');
   const b=next.bikes.find(b=>b.id===order.bikeId),original=garage.bikes.find(b=>b.id===order.bikeId);
   const targets=new Map(plannedOrderComponents(original).map(row=>[row.key,row.component]));
-  const seenParts=new Set(),seenKeys=new Set();order.installations=[];
+  const seenParts=new Set(),seenKeys=new Set();order.installations=[];order.consumablePartIds=[];order.exchangeConfirmed=true;
   for(const selection of installations){
    const part=order.parts.find(p=>p.id===selection.partId),old=targets.get(selection.replacedKey);
+   if(selection.replacedKey==='__consumable__'){if(!part?.booking||seenParts.has(part.id))throw Error('Verbrauchsmaterial muss einem tatsächlich verwendeten Ersatzteil zugeordnet sein.');order.consumablePartIds.push(part.id);seenParts.add(part.id);continue;}
    if(!part?.booking||!old||!removedKeys.includes(selection.replacedKey)||seenParts.has(part.id)||seenKeys.has(selection.replacedKey))throw Error('Jedes Ersatzteil genau einem ausgebauten Bauteil zuordnen.');
    const stock=next.inventory.find(s=>s.id===part.inventoryId);
    if(stock?.positions.find(p=>p.id===part.positionId)?.tire)throw Error('Gebrauchte Reifen werden bereits über die Reifenfunktion eingebaut.');
    const position=stock?.positions.find(p=>p.id===part.positionId);
-   const component={id:'installed:'+order.id+':'+part.id,name:old.name,category:componentCategory(old),manufacturer:stock?.manufacturer||'',model:stock?.name||part.name,serial:'',
-    originalPartNumber:stock?.articleNumber||'',price:position?.unitPrice??stock?.unitPrice??null,lastPurchasedAt:position?.supplier||'',installedDate:date,installedKm:km,
+   const component={id:'installed:'+order.id+':'+part.id,name:old.name,category:componentCategory(old),manufacturer:stock?.manufacturer??part.manufacturer??'',model:stock?.name??part.model??part.name,serial:part.serial||'',
+    originalPartNumber:stock?.articleNumber??part.articleNumber??'',price:position?.unitPrice??stock?.unitPrice??null,lastPurchasedAt:position?.supplier||'',installedDate:date,installedKm:km,
     sourceOrderId:order.id,sourceOrderPartId:part.id,sourceInventoryId:part.inventoryId||''};
    if(b.components.some(c=>c.id===component.id))throw Error('Dieses Ersatzteil ist bereits eingebaut.');
    b.components.push(component);order.installations.push({partId:part.id,replacedKey:selection.replacedKey,component:structuredClone(component)});
