@@ -65,7 +65,7 @@ console.log('PASS: password warning at 30-day boundary and expiry; no warning fo
 
 assert.match(run('whatsNewNotice()'),/Neues in dieser Version!/);
 const currentNotes=run('releaseNotes(true)');
-assert.ok(currentNotes.includes(metadata.version));assert.ok(currentNotes.includes(metadata.releaseName));assert.match(currentNotes,/Werkstatt/);
+assert.ok(currentNotes.includes(metadata.version));assert.ok(currentNotes.includes(metadata.releaseName));assert.doesNotMatch(currentNotes,/Für diese Version sind noch keine Neuerungen hinterlegt/);
 assert.doesNotMatch(currentNotes,/1\.2\.2\.a/);
 assert.equal((run('releaseNotes()').match(/<h2>1\.2\.4/g)||[]).length,1);
 console.log('PASS: dashboard release notice, current-version-only notes, matching metadata and no duplicate current release.');
