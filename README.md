@@ -1,6 +1,6 @@
 # Gravelbike Garage
 
-**Version 1.2.5 · Horchen und sehen**
+**Version 1.3.0 (Releaseplanung: 1.3)**
 
 Eine private Fahrradgarage als Web-App: Fahrräder und verbaute Bauteile verwalten, Serviceintervalle planen, Werkstattaufträge dokumentieren, Ersatzteilbestände führen und Dokumente sicher zuordnen. Die App lässt sich am Mac, auf dem Tablet und Smartphone im Browser oder als installierte Web-App nutzen.
 
@@ -12,6 +12,19 @@ Eine private Fahrradgarage als Web-App: Fahrräder und verbaute Bauteile verwalt
 - **Adressbuch und Dokumente:** Kontakte, Werkstatttermine, Rechnungen, Verträge und technische Unterlagen.
 - **Strava:** Zwei unabhängige Verbindungen mit jeweils eigener Client-ID und eigenem Client-Secret; Fahrräder getrennt zuordnen und Kilometer synchronisieren.
 - **Verwaltung:** Passwortschutz, optionale Zwei-Faktor-Anmeldung, Passkeys/YubiKey, Einstellungen, Handbuch und Versionsinformationen.
+
+## Neu in 1.3.0
+
+- Werkstatt-Assistent im einheitlichen Stil mit übersichtlichen Auftragsgrunddaten und nummerierten Tätigkeiten.
+- Bauteil raus: ausschließlich aktuell verbaute Teile der Kategorie oder die Markierung „Bauteil nicht gelistet“.
+- Bauteil rein: Hersteller-/Bauteilfilter, höchstens vier Lagerartikel pro Seite und Mengen von 1 bis 6 direkt unter der Lagerbox.
+- Verbaute Fahrradbauteile automatisch als Lagerartikel mit Bestand 0 und Fahrrad-Hinweis erfassen; bestehende Bestände erhalten.
+- Arbeitsschritte, Ersatzteile und benötigte Mengen als übersichtliche Karten anzeigen.
+- Fehlende Bestände erst in der Zusammenfassung hervorheben und optional auf die Einkaufsliste setzen.
+- Anleitungen als Karten mit Suche, Kategorie und erhaltener Mehrfachauswahl auswählen.
+- Terminplanung und abschließende Auftragszusammenfassung im gleichen Stil.
+
+Dokumentierte Änderungen: Issues #112–#121. [Releasenotes 1.3.0](docs/releases/1.3.0.md).
 
 ## Neu in 1.2.5 · Horchen und sehen
 
@@ -40,7 +53,7 @@ Alle Änderungen: [Releasenotes 1.2.5](docs/releases/1.2.5.md).
 
 ## Download für Uberspace
 
-Das geprüfte Installationspaket und die zugehörige SHA-256-Prüfsumme stehen im [Release v1.2.5](https://github.com/gravelbiking/Gravelbike_Garage/releases/tag/v1.2.5).
+Das geprüfte Installationspaket und die zugehörige SHA-256-Prüfsumme stehen im [Release v1.3.0](https://github.com/gravelbiking/Gravelbike_Garage/releases/tag/v1.3.0).
 
 Installation mit eigener PHP-/MariaDB-Umgebung: [Installationsanleitung](selfhost/INSTALLATION.md). Das ZIP enthält keine Zugangsdaten und keine Nutzerdaten. Für eine neue Installation müssen eigene Datenbankzugänge und ein eigener Installationsschlüssel konfiguriert werden.
 

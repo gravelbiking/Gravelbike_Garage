@@ -10,6 +10,6 @@
     "test": "node codespace/test.mjs",
     "test:components": "node scripts/test-components.mjs"
   },
-  "version": "1.2.5",
-  "releaseName": "Horchen und sehen"
+  "version": "1.3.0",
+  "releaseName": ""
 }

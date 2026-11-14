@@ -1,0 +1,10 @@
+import assert from 'node:assert/strict';
+import {syncInstalledInventory} from '../src/logic.js';
+const c={id:'c1',name:'Kette',category:'Antrieb',manufacturer:'SRAM',model:'GX',originalPartNumber:'123',serial:'SN',installedKm:100};
+const g={bikes:[{id:'b1',name:'Falke',components:[c]},{id:'b2',name:'Adler',components:[{...c,id:'c2'}]}],inventory:[]};let n=0;const id=()=>String(++n);
+assert.equal(syncInstalledInventory(g,id),true);assert.equal(g.inventory.length,1);const s=g.inventory[0];assert.equal(s.quantity,0);assert.deepEqual(s.positions,[]);assert.deepEqual(s.movements,[]);assert.equal(s.installedOnBikes.length,2);assert.match(s.notes,/Falke/);assert.match(s.notes,/Adler/);assert.equal(s.technicalData.serial,'SN');assert.equal(syncInstalledInventory(g,id),false);
+s.quantity=3;s.positions=[{id:'p1',quantity:3}];s.unitPrice=15;syncInstalledInventory(g,id);assert.equal(s.quantity,3);assert.equal(s.unitPrice,15);assert.equal(s.positions.length,1);
+g.bikes[0].components[0]={...c,id:'c3',model:'XX',originalPartNumber:'456'};syncInstalledInventory(g,id);assert.equal(g.inventory.length,2);assert.equal(g.inventory[1].quantity,0);
+const existing={id:'existing',category:'Antrieb',name:'Kette GX',manufacturer:'SRAM',articleNumber:'123',quantity:7,notes:'Behalten',positions:[{quantity:7}],movements:[]};const h={bikes:[{id:'b1',name:'Falke',components:[c]}],inventory:[existing]};syncInstalledInventory(h,id);assert.equal(h.inventory.length,1);assert.equal(existing.quantity,7);assert.match(existing.notes,/^Behalten/);assert.equal(syncInstalledInventory(h,id),false);
+const before=structuredClone(h);h.bikes[0].components=[];syncInstalledInventory(h,id);assert.deepEqual(h.inventory,before.inventory);
+console.log('PASS installed inventory: zero-stock catalogue, shared parts, idempotency, technical snapshot, preserved existing stock and history, new models, no removal of articles.');

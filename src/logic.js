@@ -348,3 +348,26 @@ export function installTire(garage,inventoryId,positionId,bikeId,name,date){
  const movement=stockMovement(stock,position,-1,'withdrawal',{date,bikeId:b.id,bikeName:b.name,reason:'Reifen wieder eingebaut'});
  mountStoredTire(next,stock,position,b,name,date,b.km,movement);return next;
 }
+
+// A fitted component is a catalogue reference, never an available warehouse unit.
+export function syncInstalledInventory(garage,makeId=()=>crypto.randomUUID()) {
+ const norm=v=>String(v??'').trim().toLocaleLowerCase('de-DE').replace(/\s+/g,' ');
+ const partNumber=c=>c.originalPartNumber||c.partNumber||c.articleNumber||'';
+ const signature=c=>JSON.stringify([componentCategory(c),norm(c.name),norm(c.manufacturer),norm(c.model),norm(partNumber(c)),...['width','axleDimension','brakeMount','rimHeight','innerWidth','rimMaterial','freehub'].map(k=>norm(c[k]))]);
+ garage.inventory??=[];let changed=false;
+ for(const bike of garage.bikes||[])for(const [index,c]of (bike.components||[]).entries()){
+  if(!norm(c.name))continue;
+  const key=signature(c),category=componentCategory(c),articleNumber=partNumber(c);
+  let item=garage.inventory.find(s=>s.installedArticleSignature===key||s.technicalData&&signature(s.technicalData)===key);
+  if(!item){const matches=garage.inventory.filter(s=>s.category===category&&norm(s.manufacturer)===norm(c.manufacturer)&&(
+   articleNumber?norm(s.articleNumber)===norm(articleNumber):!s.articleNumber&&norm(s.name)===norm([c.name,c.model].filter(Boolean).join(' '))));if(matches.length===1)item=matches[0];}
+  if(!item){item={id:makeId(),name:[c.name,c.model].filter(Boolean).join(' '),manufacturer:c.manufacturer||'',model:c.model||'',partType:c.name,articleNumber,category,kind:'Original',unit:'Stück',quantity:0,minStock:0,unitPrice:null,location:'',purchaseDate:'',notes:'',invoices:[],datasheets:[],positions:[],movements:[],technicalData:structuredClone(c),installedArticleSignature:key};garage.inventory.push(item);changed=true;}
+  const source={bikeId:bike.id,componentKey:installedComponentKey(c,index),bikeName:bike.name||'Fahrrad'};
+  if(!(item.installedOnBikes||[]).some(r=>r.bikeId===source.bikeId&&r.componentKey===source.componentKey)){
+   item.installedOnBikes=[...(item.installedOnBikes||[]),source];
+   const note='Automatisch als Artikel erfasst, weil dieses Bauteil an Fahrrad „'+source.bikeName+'“ verbaut ist. Bestand durch diese Erfassung: 0.';
+   item.notes=[item.notes,note].filter(Boolean).join('\n');changed=true;
+  }
+ }
+ return changed;
+}
