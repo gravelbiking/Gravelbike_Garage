@@ -11,8 +11,8 @@ console.log('PASS 1.2.4: occurrence-specific planning, previous/completed/cancel
 
 // Issue #95: a single task spans category, spare-part and quantity screens.
 for(const page of [2,3,4]){
- assert.equal(run(`orderWizardTitle({page:${page},index:0,step:{title:'Bremsbelag wechseln'}})`),'Schritt 1 · Bremsbelag wechseln');
- assert.equal(run(`orderWizardTitle({page:${page},index:1,step:{title:'Kette wechseln'}})`),'Schritt 2 · Kette wechseln');
+ assert.equal(run(`orderWizardTitle({page:${page},index:0,step:{title:'Bremsbelag wechseln'}})`),'Arbeitsschritt 1'+(page===2?' - Welches Bauteil soll raus?':page===3?' - Welches Bauteil soll rein?':''));
+ assert.equal(run(`orderWizardTitle({page:${page},index:1,step:{title:'Kette wechseln'}})`),'Arbeitsschritt 2'+(page===2?' - Welches Bauteil soll raus?':page===3?' - Welches Bauteil soll rein?':''));
 }
 for(const page of [0,1,5,6,7,8,10,11,12])assert.doesNotMatch(run(`orderWizardTitle({page:${page},index:0,step:{title:'Bremsbelag wechseln'}})`),/Schritt \d/);
 console.log('PASS #95: task numbering remains stable across screens; global and article screens have no page-step numbering.');

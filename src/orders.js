@@ -234,7 +234,7 @@ function orderDashboard(id){
    <p class="help">${next?'Als Nächstes · '+esc(next.title):o.steps.length?'Alle Arbeitsschritte sind erledigt.':'Hier erscheinen die geplanten Arbeiten.'}</p>
    <ol class="order-steps">${o.steps.map(step=>`<li class="${step===next?'order-next':''}">
     <div class="list-row"><div class="row-copy"><strong>${esc(step.title)}</strong>
-    <small>${esc(orderReplacementRows(o).find(row=>row.key===step.componentKey)?.component.name||'')}</small></div>
+    <small>${esc(orderReplacementRows(o).find(row=>row.key===step.componentKey)?.component.name||(step.componentNotListed?'Bauteil nicht gelistet':''))}</small></div>
     ${orderCheckbox(o,step,'step','Erledigt',step.title,step.done)}${action('order-step','Bearbeiten',step.id)}</div>
     <h3>Ersatzteile für diesen Arbeitsschritt</h3>${o.parts.filter(part=>part.stepId===step.id).map(part=>orderPartRow(o,part)).join('')||'<p class="help">Keine Ersatzteile zugeordnet.</p>'}
     ${orderGuides(step.guideIds,step.id,expanded)}</li>`).join('')}</ol></section>
