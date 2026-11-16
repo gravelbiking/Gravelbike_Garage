@@ -14,7 +14,7 @@ const context=vm.createContext({
  document:{activeElement:null,documentElement:{dataset:{}},addEventListener:(name,fn)=>handlers.set(name,fn)},
  notify(){},updatePanel:()=>'<div id="updatePanel"></div>',refreshUpdates(){updates++;},
  dashboard(){},bikesPage(){},archivePage(){},servicePage(){},historyPage(){},computersPage(){},inventoryPage(){},
- toolsPage(){},documentsPage(){},addressBook(){},refreshStrava(){},refreshSecurityStatus(){},refreshSystemStatus(){}
+ maintenancePage(){},toolsPage(){},documentsPage(){},addressBook(){},refreshStrava(){},refreshSecurityStatus(){},refreshSystemStatus(){}
 });
 for(const file of ['navigation','administration']){
  let source=await readFile(new URL('../src/'+file+'.js',import.meta.url),'utf8');

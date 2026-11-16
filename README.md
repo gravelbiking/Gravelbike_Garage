@@ -1,6 +1,6 @@
 # Gravelbike Garage
 
-**Version 1.3.1 · bugfixing**
+**Version 1.3.2 · Teststand**
 
 Eine private Fahrradgarage als Web-App: Fahrräder und verbaute Bauteile verwalten, Serviceintervalle planen, Werkstattaufträge dokumentieren, Ersatzteilbestände führen und Dokumente sicher zuordnen. Die App lässt sich am Mac, auf dem Tablet und Smartphone im Browser oder als installierte Web-App nutzen.
 
@@ -12,6 +12,16 @@ Eine private Fahrradgarage als Web-App: Fahrräder und verbaute Bauteile verwalt
 - **Adressbuch und Dokumente:** Kontakte, Werkstatttermine, Rechnungen, Verträge und technische Unterlagen.
 - **Strava:** Zwei unabhängige Verbindungen mit jeweils eigener Client-ID und eigenem Client-Secret; Fahrräder getrennt zuordnen und Kilometer synchronisieren.
 - **Verwaltung:** Passwortschutz, optionale Zwei-Faktor-Anmeldung, Passkeys/YubiKey, Einstellungen, Handbuch und Versionsinformationen.
+
+## Neu in 1.3.2
+
+- **Serviceintervalle** ersetzt die Bezeichnung Serviceplan. Bevorstehende und überfällige Services sind oberhalb der Liste getrennt filterbar.
+- Unter **Werkstatt → Wartung** sind geplante Wartungen aus Serviceintervallen erreichbar.
+- **Wartung planen** startet mit vorausgewähltem Fahrrad, festem Auftragstyp Service und leerer Kurzbezeichnung.
+- Je Tätigkeit **Wartung oder Austausch** festlegen. Bei Austausch passen Ersatzteil und benötigte Menge zur gewählten Kategorie; Wartungsschritte können ohne Ersatzteil geplant werden.
+- Mehrere Arbeitsschritte, Anleitungen, geplantes Datum und Zusammenfassung gehen dem endgültigen Speichern voraus. Planung verändert keine Bestände oder verbauten Bauteile.
+
+Issues #124–#128. Bereitstellung zunächst ausschließlich auf Test1 und Test2; kein GitHub-Release veröffentlicht. [Releasenotes](docs/releases/1.3.2.md).
 
 ## Bugfix in 1.3.1 · bugfixing
 

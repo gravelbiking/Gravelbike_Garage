@@ -359,3 +359,9 @@ dialog{max-height:calc(100dvh - 32px - env(safe-area-inset-top,0px) - env(safe-a
 .order-wizard-date .form-footer{justify-content:center;flex-wrap:wrap}
 .order-wizard-date .form-footer button{white-space:normal;max-width:100%}
 @media(max-width:480px){.order-wizard-date input[type=date]{width:100%}}
+
+.service-interval-filters{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px;align-items:end}
+.service-interval-filters>label{min-width:0;max-width:100%}
+.service-interval-filters button{min-height:44px;white-space:normal}
+.order-task-context{text-align:center;font-weight:600;color:#203c30;overflow-wrap:anywhere}
+@media(max-width:480px){.service-interval-filters>label{width:100%}.service-interval-filters select{width:100%}}

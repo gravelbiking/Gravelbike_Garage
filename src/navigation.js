@@ -1,12 +1,12 @@
 const navModules=[
  {id:'dashboard',label:'Startseite',icon:'⌂'},
  {id:'bikes',label:'Meine Fahrräder',icon:'bicycle',children:[
-  ['parking','Fahrradparkplatz','Ⓟ'],['service','Serviceplan','◷'],
+  ['parking','Fahrradparkplatz','Ⓟ'],['service','Serviceintervalle','◷'],
   ['history','Servicebuch','book'],['computers','Radcomputer','GPS'],['archive','Fahrradarchiv','cloud']
  ]},
  {id:'inventory',label:'Lager',icon:'shelf'},
  {id:'contacts',label:'Adressbuch',icon:'☷'},
- {id:'workshop',label:'Werkstatt',icon:'wrench',children:[['orders','Werkstattaufträge','pencil'],['tools','Werkzeug','⚒'],['guides','Anleitungen','▤']]},
+ {id:'workshop',label:'Werkstatt',icon:'wrench',children:[['maintenance','Wartung','wrench'],['orders','Werkstattaufträge','pencil'],['tools','Werkzeug','⚒'],['guides','Anleitungen','▤']]},
  {id:'documents',label:'Dokumente',icon:'document'},
  {id:'settings',label:'Verwaltung',icon:'⚙',children:[
   ['configuration','Konfiguration','⚙'],['strava','Strava Integration','↗'],['users','Userverwaltung','person'],['system','System','server'],
@@ -32,7 +32,7 @@ function navIcon(icon){
 }
 
 function renderNavigation(page){
- const parent={bike:data.bikes.find(b=>encodeURIComponent(b.id)===location.hash.split('/')[1])?.archived?'archive':'parking',computer:'computers',stock:'inventory',order:'orders',guide:'guides',plan:'service',purchase:'inventory',shopping:'inventory',entry:'history',contact:'contacts',updates:'info'}[page]||page;
+ const parent={bike:data.bikes.find(b=>encodeURIComponent(b.id)===location.hash.split('/')[1])?.archived?'archive':'parking',computer:'computers',stock:'inventory',order:(data.orders||[]).find(o=>encodeURIComponent(o.id)===location.hash.split('/')[1])?.maintenancePlanning?'maintenance':'orders',guide:'guides',plan:'service',purchase:'inventory',shopping:'inventory',entry:'history',contact:'contacts',updates:'info'}[page]||page;
  const owner=navModules.find(m=>m.id===parent||m.children?.some(([id])=>id===parent))||navModules[0];
  const child=owner.children?.find(([id])=>id===parent);
  $('#crumb').textContent=child?`${owner.label} / ${child[1]}`:owner.label;
@@ -55,7 +55,7 @@ function renderPage(){
   parking:bikesPage, bike:()=>detail(id), archive:archivePage, service:servicePage, history:historyPage, plan:()=>planDetail(id), entry:()=>historyDetail(id), purchase:()=>purchaseDetail(id), shopping:()=>heading('Einkaufsliste','Geplante Einkäufe und Material für deine Werkstatt.')+shoppingList(),
   computers:computersPage, computer:()=>computerDetail(id), inventory:inventoryPage, stock:()=>stockDetail(id,subId),
   contacts:addressBook, contact:()=>addressBook(id), workshop:()=>moduleDashboard('workshop','Werkzeug und Werkstattanleitungen an einem Ort.'),
-  tools:toolsPage, guides:()=>guidesPage(), guide:()=>guidesPage(id), documents:documentsPage, orders:()=>ordersPage(), order:()=>orderDashboard(id),
+  maintenance:maintenancePage, tools:toolsPage, guides:()=>guidesPage(), guide:()=>guidesPage(id), documents:documentsPage, orders:()=>ordersPage(), order:()=>orderDashboard(id),
   settings:()=>moduleDashboard('settings','Konfiguration, Zugang und Betrieb deiner Garage.'),
   configuration:configurationPage, strava:()=>heading('Strava Integration','Konten verbinden und Fahrräder zuordnen.')+stravaPanel(), users:usersPage, system:systemPage, info:()=>infoPage(id), updates:()=>infoPage('update'), backup:backupPage
  };
@@ -93,7 +93,7 @@ function toggleBikeArchive(id){
  if(!b)return;
  const archived=!b.archived;
  const title=archived?'Fahrrad archivieren':'Fahrrad wieder aktivieren';
- const message=archived?'Steckbrief, Dokumente und Servicehistorie bleiben erhalten.':'Das Fahrrad erscheint wieder auf dem Fahrradparkplatz und im aktiven Serviceplan.';
+ const message=archived?'Steckbrief, Dokumente und Servicehistorie bleiben erhalten.':'Das Fahrrad erscheint wieder auf dem Fahrradparkplatz und im aktiven Serviceintervallen.';
  modal(title,`<p>${esc(b.name)} · ${message}</p>`,async ()=>{
   if(await mutate(()=>{b.archived=archived;})){
    closeModal();

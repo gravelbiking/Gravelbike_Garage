@@ -713,6 +713,8 @@ def run_case(prefix):
             check_release125(call,project)
             from release13_case import check_release13
             check_release13(call,project)
+            from release132_case import check_release132
+            check_release132(call,project)
             assert call('logout', 'POST')[0] == 200
             for _ in range(3):
                 assert call('auth','POST',{**credentials,'password':'incorrect'})[0]==401

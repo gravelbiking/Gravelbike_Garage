@@ -31,7 +31,7 @@ function documentReferences(){
  }
  for(const p of data.shopping)add(p.invoices,'Einkauf · '+p.name,recordRoute('purchase',p.id),'Rechnung');
  for(const c of data.computers)if(c.photo)add([{fileId:c.photo}],'Radcomputerfoto · '+c.model,recordRoute('computer',c.id));
- for(const p of data.plans)add(p.attachments,'Serviceplan · '+p.title,recordRoute('plan',p.id));
+ for(const p of data.plans)add(p.attachments,'Serviceintervalle · '+p.title,recordRoute('plan',p.id));
  for(const h of data.history)add(h.attachments,'Servicebuch / Lebenslauf · '+h.title,recordRoute('entry',h.id));
  for(const c of data.contacts)add(c.documents,'Adressbuch · '+c.name,recordRoute('contact',c.id));
  for(const g of data.guides)add(g.attachments,'Anleitung · '+g.title,recordRoute('guide',g.id));
@@ -284,9 +284,9 @@ async function readImage(f,file,current){
 
 function planDetail(id){
  const plan=data.plans.find(p=>encodeURIComponent(p.id)===id);
- return '<a class="back" href="#service">← Serviceplan</a>'+
+ return '<a class="back" href="#service">← Serviceintervalle</a>'+
   (plan?heading(esc(plan.title),'Serviceintervall für '+esc(bike(plan.bikeId)?.name||'Fahrrad'))+`<div class="panel">${serviceRow(plan)}${plan.notes?`<p class="history-note">${esc(plan.notes)}</p>`:''}</div>`:
-   empty('Serviceplan nicht gefunden.','Wähle ein Intervall aus der Übersicht.'));
+   empty('Serviceintervalle nicht gefunden.','Wähle ein Intervall aus der Übersicht.'));
 }
 
 function historyDetail(id){
@@ -298,7 +298,7 @@ function historyDetail(id){
 
 function purchaseDetail(id){
  const purchase=data.shopping.find(p=>encodeURIComponent(p.id)===id);
- return '<a class="back" href="#service">← Serviceplan und Einkauf</a>'+
+ return '<a class="back" href="#service">← Serviceintervalle und Einkauf</a>'+
   (purchase?heading(esc(purchase.name),'Einkauf und Material')+`<div class="panel">${purchaseRow(purchase)}</div>`:
    empty('Einkaufsartikel nicht gefunden.','Wähle einen Artikel aus der Einkaufsliste.'));
 }
