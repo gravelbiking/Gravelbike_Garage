@@ -1,18 +1,19 @@
 const workshopOrder=id=>data.orders.find(o=>o.id===id);
-const orderType=o=>o.type==='service'?'Service':'Reparatur';
+const isIntervalMaintenance=o=>Boolean(o?.maintenancePlanning||o?.planId);
+const orderType=o=>isIntervalMaintenance(o)?'Wartung':o.type==='service'?'Service':'Reparatur';
 const orderBike=o=>bike(o.bikeId)?.name||o.externalBike;
 const orderLink=o=>recordRoute('order',o.id);
 
 function ordersPage(){
- const orders=data.orders.slice().reverse();
- return heading('Werkstattaufträge','Service und Reparaturen für eigene und fremde Fahrräder.',
+ const orders=data.orders.filter(o=>!isIntervalMaintenance(o)).slice().reverse();
+ return heading('Werkstattaufträge','Individuelle Aufträge unabhängig von Serviceintervallen.',
   '<button class="primary" data-action="order-new">＋ Auftrag anlegen</button>')+
   (orders.length?`<div class="panel">${orders.map(o=>`<a class="list-row" href="${orderLink(o)}"><div class="row-copy"><strong>${esc(o.title)}</strong><small>${esc(orderType(o))} · ${esc(orderBike(o))} · ${orderState(o)}</small></div><span>${o.steps.filter(s=>s.done).length} / ${o.steps.length} Schritte ↗</span></a>`).join('')}</div>`:
   empty('Noch keine Aufträge.','Lege einen Auftrag für die nächste Arbeit in deiner Werkstatt an.'));
 }
 
 function maintenancePage(){
- const orders=data.orders.filter(o=>o.maintenancePlanning||o.planId).slice().reverse();
+ const orders=data.orders.filter(isIntervalMaintenance).slice().reverse();
  return heading('Wartung','Geplante Wartungen aus deinen Serviceintervallen.','<a class="primary" href="#service">Serviceintervalle anzeigen</a>')+(orders.length?`<div class="panel">${orders.map(o=>`<a class="list-row" href="${orderLink(o)}"><div class="row-copy"><strong>${esc(o.title)}</strong><small>${esc(orderBike(o))} · ${date(o.plannedDate)} · ${orderState(o)}</small></div><span>${o.steps.length} Arbeitsschritte ↗</span></a>`).join('')}</div>`:empty('Noch keine Wartungen geplant.','Öffne die Serviceintervalle und wähle Wartung planen.'));
 }
 
@@ -38,7 +39,7 @@ function editOrder(id,planId='',focusStep,tireTarget,draft){
  // Keep earlier free-text work and attachments in existing records.
  if(!o.steps.length&&o.description)o.steps.push({id:uid(),title:o.description.slice(0,200),done:false,guideIds:[]});
  const choices=data.bikes.filter(b=>!b.archived||b.id===o.bikeId);
- modal(existing?'Werkstattauftrag bearbeiten':'Werkstattauftrag anlegen',draft?.html||`<div class="form-grid">
+ modal(existing?(isIntervalMaintenance(o)?'Wartung bearbeiten':'Werkstattauftrag bearbeiten'):'Werkstattauftrag anlegen',draft?.html||`<div class="form-grid">
  ${select('type','Auftragstyp',o.maintenancePlanning?[['service','Service']]:[['service','Service'],['repair','Reparatur']],o.type)}
  ${select('bikeId','Fahrrad',[['','Fremdes Fahrrad'],...choices.map(b=>[b.id,b.name])],o.bikeId)}
  ${input('externalBike','Fremdes Fahrrad beschreiben',o.externalBike,'text','maxlength="200"')}
@@ -223,15 +224,15 @@ function createOrderStock(row,editor){
 
 function orderDashboard(id){
  const o=data.orders.find(w=>encodeURIComponent(w.id)===id);
- if(!o)return (o.maintenancePlanning?'<a class="back" href="#maintenance">← Wartung</a>':'<a class="back" href="#orders">← Werkstattaufträge</a>')+empty('Auftrag nicht gefunden.','Wähle einen Auftrag aus der Liste.');
+ if(!o)return '<a class="back" href="#orders">← Werkstattaufträge</a>'+empty('Auftrag nicht gefunden.','Wähle einen Auftrag aus der Liste.');
  const next=o.steps.find(s=>!s.done);
  const previous=document.querySelector('[data-workshop-order]');
  const expanded=new Set(previous?.dataset.workshopOrder===o.id
   ?[...previous.querySelectorAll('details[data-order-guide][open]')].map(el=>el.dataset.orderGuide):[]);
  const locked=orderLocked(o);
  const action=(key,label,item='',style='small-button')=>locked?'':`<button class="${style}" data-action="${key}" data-id="${esc(o.id)}" data-item-id="${esc(item)}">${label}</button>`;
- return (o.maintenancePlanning?'<a class="back" href="#maintenance">← Wartung</a>':'<a class="back" href="#orders">← Werkstattaufträge</a>')+
-  heading(esc(o.title),esc(orderType(o)+' · '+orderBike(o)),`<span class="badge">${orderState(o)}</span>`+action('order-edit','Auftrag bearbeiten'),'WERKSTATTAUFTRAG')+
+ return (isIntervalMaintenance(o)?'<a class="back" href="#maintenance">← Wartung</a>':'<a class="back" href="#orders">← Werkstattaufträge</a>')+
+  heading(esc(o.title),esc(orderType(o)+' · '+orderBike(o)),`<span class="badge">${orderState(o)}</span>`+action('order-edit',isIntervalMaintenance(o)?'Wartung bearbeiten':'Auftrag bearbeiten'),isIntervalMaintenance(o)?'WARTUNG':'WERKSTATTAUFTRAG')+
   `<div class="order-dashboard" data-workshop-order="${esc(o.id)}">
    <section class="panel order-section"><h2>Auftrag</h2><p>${esc(o.title)}</p>${o.plannedDate?`<p>Geplante Durchführung: ${date(o.plannedDate)}</p>`:''}</section>
    ${orderReplacementView(o)}

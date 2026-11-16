@@ -69,3 +69,10 @@ assert.ok(currentNotes.includes(metadata.version));assert.ok(currentNotes.includ
 assert.doesNotMatch(currentNotes,/1\.2\.2\.a/);
 assert.equal((run('releaseNotes()').match(/<h2>1\.2\.4/g)||[]).length,1);
 console.log('PASS: dashboard release notice, current-version-only notes, matching metadata and no duplicate current release.');
+
+context.data.orders=[{id:'legacy',planId:'deleted-plan'},{id:'new',maintenancePlanning:true},{id:'independent',type:'service'}];
+for(const id of ['legacy','new']){location.hash='#order/'+id;run("renderNavigation('order')");assert.equal(nodes.get('#crumb').textContent,'Meine Fahrräder / Wartung');}
+location.hash='#order/independent';run("renderNavigation('order')");assert.equal(nodes.get('#crumb').textContent,'Werkstatt / Werkstattaufträge');
+assert.equal(run("navModules.find(m=>m.id==='bikes').children.some(c=>c[0]==='maintenance')"),true);
+assert.equal(run("navModules.find(m=>m.id==='workshop').children.some(c=>c[0]==='maintenance')"),false);
+console.log('PASS #129: new/legacy maintenance belongs to Meine Fahrräder; independent orders remain in Werkstatt.');
