@@ -15,6 +15,9 @@ class LogTests(unittest.TestCase):
    with self.assertRaises(ValueError):read_logs(root,{'from':'2026-11-13T10:00'})
    with self.assertRaises(ValueError):read_logs(root,{'module':'../secrets'})
    with self.assertRaises(ValueError):read_logs(root,{'offset':'-1'})
+ def test_debug_filter(self):
+  with tempfile.TemporaryDirectory() as d:
+   root=pathlib.Path(d);(root/'logs').mkdir();(root/'logs/bikes--backend--2026-11-20.jsonl').write_text(json.dumps({'timestamp':'2026-11-20T18:00:00Z','level':'debug','message':'Anfrage abgeschlossen.','module':'bikes','source':'backend'})+'\n');self.assertEqual(read_logs(root,{'level':'debug'})['total'],1)
  def test_missing_malformed_and_symlinks(self):
   with tempfile.TemporaryDirectory() as d:
    root=pathlib.Path(d);self.assertIn('Noch keine',read_logs(root,{})['text']);(root/'logs').mkdir();p=root/'logs/api--backend--2026-11-13.jsonl';p.write_text('bad json\n{"partial":');self.assertTrue(read_logs(root,{})['truncated'])

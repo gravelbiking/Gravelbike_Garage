@@ -57,12 +57,30 @@ function gt_log_context(array $values): void {
     $GLOBALS['gt_log_context']=array_merge($GLOBALS['gt_log_context']??[],$values);
 }
 function gt_log_directory(): string { return dirname(rtrim(gt_storage(),'/')).'/logs'; }
+function gt_log_level(): string {
+    $levels=['debug'=>0,'info'=>1,'warning'=>2,'error'=>3,'critical'=>4];
+    try {
+        $level=gt_config()['logging']['level']??'info';
+        $path=gt_storage().'/logging-level.json';
+        if(!is_link($path)&&is_file($path)&&filesize($path)<=1024){
+            $settings=json_decode((string)file_get_contents($path),true);
+            if(is_array($settings)&&isset($levels[$settings['level']??'']))$level=$settings['level'];
+        }
+        return isset($levels[$level])?$level:'info';
+    } catch(Throwable $ignored){return 'info';}
+}
+function gt_log_diagnostic($code): ?string {
+    $messages=json_decode('{"bike.basics.invalid": "Bitte zuerst die Fahrrad-Grunddaten prüfen.", "bike.name.missing": "Bitte zuerst einen Namen für das Fahrrad eingeben.", "bike.type.missing": "Bitte einen Fahrradtyp eingeben.", "component.name.missing": "Bitte zuerst einen Bauteilnamen eingeben.", "component.name.required": "Bitte jedes ausgefüllte Bauteil benennen.", "component.fields.invalid": "Bitte die markierten Bauteilfelder prüfen.", "component.date.invalid": "Bitte ein gültiges Einbaudatum bis heute eingeben.", "component.mileage.invalid": "Die Einbau-km müssen eine Zahl ab 0 sein.", "component.bearing-date.invalid": "Bitte ein gültiges Lagerservicedatum bis heute eingeben.", "component.wheel.invalid": "Felgenhöhe und Innenmaulweite müssen Zahlen ab 0 sein.", "component.price.invalid": "Bitte einen gültigen Teilepreis ab 0 eingeben."}',true);
+    return is_string($code)?($messages[$code]??null):null;
+}
 function gt_log_limits(): array {
     $c=gt_config()['logging']??[];
     $file=max(65536,min(10*1024*1024,(int)($c['max_file_bytes']??2*1024*1024)));
     return ['file'=>$file,'total'=>max($file,min(200*1024*1024,(int)($c['max_total_bytes']??20*1024*1024))),'days'=>max(1,min(90,(int)($c['retention_days']??14)))];
 }
 function gt_log(string $level,string $source,string $message,array $details=[]): bool {
+    $levels=['debug'=>0,'info'=>1,'warning'=>2,'error'=>3,'critical'=>4];
+    if(($levels[$level]??3)<$levels[gt_log_level()])return true;
     static $writing=false;
     if($writing)return false;
     $writing=true;$lock=null;
@@ -76,7 +94,7 @@ function gt_log(string $level,string $source,string $message,array $details=[]):
         $module=preg_match('/^[a-z][a-z0-9_-]{0,39}$/D',(string)($context['module']??''))?$context['module']:gt_log_module();
         $source=preg_match('/^[a-z][a-z0-9_-]{0,39}$/D',$source)?$source:'backend';
         $releaseFile=__DIR__.'/release.json';$release=is_file($releaseFile)?json_decode((string)file_get_contents($releaseFile),true):[];
-        $record=['timestamp'=>(new DateTimeImmutable('now',new DateTimeZone('UTC')))->format('Y-m-d\TH:i:s.u\Z'),'instance'=>gt_config()['installation_name']??'Garage','version'=>$release['version']??'unknown','release_name'=>$release['name']??'','level'=>in_array($level,['info','warning','error','critical'],true)?$level:'error','module'=>$module,'source'=>$source,'http_request_id'=>gt_log_id(),'request_id'=>gt_log_id(),'message'=>gt_log_redact($message)];
+        $record=['timestamp'=>(new DateTimeImmutable('now',new DateTimeZone('UTC')))->format('Y-m-d\TH:i:s.u\Z'),'instance'=>gt_config()['installation_name']??'Garage','version'=>$release['version']??'unknown','release_name'=>$release['name']??'','level'=>in_array($level,['debug','info','warning','error','critical'],true)?$level:'error','module'=>$module,'source'=>$source,'http_request_id'=>gt_log_id(),'request_id'=>gt_log_id(),'message'=>gt_log_redact($message)];
         foreach(['operation','route','method','provider','provider_field','provider_resource','error_type','error_code','client_id','previous_client_id','connection','http_status','file','line','attempt_id','expires_at','count','first_seen','last_seen','reason'] as $key) {
             if(!isset($context[$key])||!is_scalar($context[$key]))continue;
             $record[$key]=is_string($context[$key])?gt_log_redact($context[$key]):$context[$key];
@@ -113,5 +131,5 @@ function gt_log_exception(Throwable $error,string $source='backend',array $detai
 function gt_log_install(): void {
     set_error_handler(function($severity,$message,$file,$line){if(!(error_reporting()&$severity))return false;gt_log(in_array($severity,[E_WARNING,E_USER_WARNING,E_NOTICE,E_USER_NOTICE,E_DEPRECATED,E_USER_DEPRECATED],true)?'warning':'error','php',$message,['module'=>'php','file'=>basename($file),'line'=>$line]);return true;});
     set_exception_handler(function(Throwable $e){gt_log_exception($e,'php',['module'=>'php']);if(PHP_SAPI==='cli'){fwrite(STDERR,"Gravelbike Garage: unbehandelter Fehler; privates Fehlerprotokoll prüfen.\n");exit(1);}gt_json(['error'=>'Die Anfrage konnte nicht verarbeitet werden.'],500);});
-    register_shutdown_function(function(){ $e=error_get_last();if($e&&in_array($e['type'],[E_ERROR,E_PARSE,E_CORE_ERROR,E_COMPILE_ERROR],true))gt_log('critical','php',$e['message'],['module'=>'php','file'=>basename($e['file']),'line'=>$e['line']]); });
+    register_shutdown_function(function(){ if(PHP_SAPI!=='cli'&&gt_log_level()==='debug')gt_log('debug','backend','Anfrage abgeschlossen.',['operation'=>'http.complete','http_status'=>http_response_code()?:200]); $e=error_get_last();if($e&&in_array($e['type'],[E_ERROR,E_PARSE,E_CORE_ERROR,E_COMPILE_ERROR],true))gt_log('critical','php',$e['message'],['module'=>'php','file'=>basename($e['file']),'line'=>$e['line']]); });
 }

@@ -1,7 +1,7 @@
 """Read only registry-bound structured logs. No user-supplied filesystem paths."""
 import datetime,heapq,json,os,pathlib,re,stat,urllib.parse
 NAME=re.compile(r'([a-z][a-z0-9_-]{0,39})--([a-z][a-z0-9_-]{0,39})--\d{4}-\d{2}-\d{2}(?:-\d+)?\.jsonl\Z')
-LEVELS={'info','warning','error','critical'}
+LEVELS={'debug','info','warning','error','critical'}
 def text_safe(value):
  text=str(value)
  text=re.sub(r'(?i)https?://[^\s<>"\x27]+','[URL]',text)

@@ -48,6 +48,23 @@ window.addEventListener('pagehide',()=>{if(state?.setup)navigator.sendBeacon('ap
 setInterval(()=>{if(state?.authenticated&&!dialog.open)load().catch(()=>{});},60000);boot().catch(fail);
 
 let logFilters={id:'',log:'errors',module:'',source:'',level:'',query:'',request_id:'',from:'',to:''},logOffset=0,logRefreshTimer,logGeneration=0;
+function logPreview(result){
+ const newest=(a,b)=>{const x=String(a.timestamp||a.at||a.time||''),y=String(b.timestamp||b.at||b.time||'');const delta=Date.parse(y)-Date.parse(x);return Number.isFinite(delta)&&delta?delta:y.localeCompare(x);};
+ const line=record=>{
+  const timestamp=record.timestamp||record.at||record.time||'Zeitstempel nicht vorhanden';
+  const {timestamp:_,...details}=record;
+  return String(timestamp)+' '+JSON.stringify(details);
+ };
+ if(Array.isArray(result.entries))return result.entries.length?
+  result.entries.slice().sort(newest).map(line).join('\n'):
+  result.text||'Keine passenden Protokolleinträge.';
+ const rows=String(result.text||'').split(/\r?\n/).filter(Boolean);
+ const parsed=rows.map(text=>{try{const record=JSON.parse(text);if(record&&typeof record==='object'&&(record.timestamp||record.at||record.time))return record;}catch{}return null;});
+ if(parsed.length&&parsed.every(Boolean))return parsed.sort(newest).map(line).join('\n');
+ const groups=[];
+ for(const text of rows){const match=text.match(/^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:?\d{2})?)/);const bracket=text.match(/^\[([^\]]+)\]/);const bracketDate=bracket?bracket[1].replace(/^(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)\s+/,''):'';if(match)groups.push({timestamp:match[1],text});else if(bracket&&Number.isFinite(Date.parse(bracketDate)))groups.push({timestamp:new Date(Date.parse(bracketDate)).toISOString(),text});else if(groups.length)groups[groups.length-1].text+=' | '+text;else groups.push({timestamp:'',text});}
+ return groups.sort(newest).map(row=>row.text).join('\n');
+}
 function renderLogs(host){
  logFilters.id=logFilters.id||snapshot.instances[0]?.id||'admin';
  const options=(rows,value,empty='Alle')=>`<option value="">${empty}</option>`+rows.map(x=>`<option value="${esc(x)}" ${x===value?'selected':''}>${esc(x)}</option>`).join('');
@@ -56,12 +73,12 @@ function renderLogs(host){
  <label>Protokoll<select name="log">${[['errors','Strukturierte Fehler aller Module / APIs'],['audit','Admin-Aktivitäten'],['php','PHP · Server'],['apache','Apache · Server'],['strava','Strava-Dienst'],['update','Update-Dienst'],['grafana','Grafana'],['monitor','Monitoring']].map(([key,label])=>`<option value="${key}" ${logFilters.log===key?'selected':''}>${label}</option>`).join('')}</select></label>
  <label>Modul<select name="module">${options(logFilters.module?[logFilters.module]:[],logFilters.module)}</select></label>
  <label>Quelle / API<select name="source">${options(logFilters.source?[logFilters.source]:[],logFilters.source)}</select></label>
- <label>Schweregrad<select name="level">${options(['info','warning','error','critical'],logFilters.level)}</select></label>
+ <label>Schweregrad<select name="level">${options(['debug','info','warning','error','critical'],logFilters.level)}</select></label>
  <label>Suche<input name="query" type="search" maxlength="200" value="${esc(logFilters.query)}"></label>
  <label>Vorgangs-ID<input name="request_id" maxlength="64" value="${esc(logFilters.request_id)}"></label>
  <label>Von (Ortszeit)<input name="from" type="datetime-local" value="${esc(logFilters.from)}"></label><label>Bis (Ortszeit)<input name="to" type="datetime-local" value="${esc(logFilters.to)}"></label>
  <button class="primary" type="submit">Anzeigen / erneut versuchen</button><button type="button" id="log-reset">Filter zurücksetzen</button>
- </form><p class="help">Zeitstempel im Protokoll sind UTC. Geheimnisse werden maskiert. Die Suche gilt für die gewählte Instanz.</p>
+ </form><p class="help">Zeitstempel stehen am Zeilenanfang (UTC), neueste Einträge oben. Geheimnisse werden maskiert. Die Suche gilt für die gewählte Instanz.</p>
  <div class="actions"><button id="log-download">Gefilterte Logs als TXT</button><label class="check"><input id="log-auto" type="checkbox"> Alle 15 Sekunden aktualisieren</label></div>
  <p id="log-state" role="status"></p><pre id="log-output" tabindex="0" aria-label="Protokolleinträge"></pre>
  <div class="actions"><button id="log-prev">Zurück</button><span id="log-page"></span><button id="log-next">Weitere Einträge</button></div></section>`;
@@ -75,9 +92,9 @@ function renderLogs(host){
    const result=await api('logs',{...values(),export:download});
    if(generation!==logGeneration||!out.isConnected)return;
    if(download){const url=URL.createObjectURL(new Blob([result.scope+'\n'+result.text],{type:'text/plain;charset=utf-8'}));const a=document.createElement('a');a.href=url;a.download=result.download_name||'garage-protokoll.txt';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
-   out.textContent=result.scope+'\n\n'+result.text;
+   out.textContent=logPreview(result);out.scrollTop=0;
    for(const name of ['module','source'])if(result[name==='module'?'modules':'sources'])form.elements[name].innerHTML=options(result[name==='module'?'modules':'sources'],logFilters[name]);
-   info.textContent=(result.logger?.healthy===false?'Logger gestört: '+result.logger.error+' · ':'')+(result.total==null?'Dienstprotokoll geladen.':result.total+' passende Einträge.')+(result.truncated?' Anzeige begrenzt; Zeitraum eingrenzen.':'');
+   info.textContent=result.scope+' · Neueste Einträge zuerst · '+(result.logger?.healthy===false?'Logger gestört: '+result.logger.error+' · ':'')+(result.total==null?'Dienstprotokoll geladen.':result.total+' passende Einträge.')+(result.truncated?' Anzeige begrenzt; Zeitraum eingrenzen.':'');
    host.querySelector('#log-page').textContent=result.total==null?'':`Ab Eintrag ${logOffset+1} · maximal 100 pro Seite`;
    buttons.forEach(b=>b.disabled=false);host.querySelector('#log-prev').disabled=logOffset===0;host.querySelector('#log-next').disabled=!result.has_more;
   }catch(e){garageRuntime.log(e,'admin-logs');info.textContent='Protokolle konnten nicht geladen werden. Mit „Anzeigen / erneut versuchen“ erneut laden.';out.textContent='';buttons.forEach(b=>b.disabled=false);}

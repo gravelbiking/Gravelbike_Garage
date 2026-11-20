@@ -11,3 +11,5 @@ const error=Error('private');await assert.rejects(runtime.request(async()=>{thro
 status=401;runtime.log(Error('not-for-logs'),'auth');await new Promise(r=>setImmediate(r));assert.ok([...storage.values()].some(s=>s.includes('auth')));const failed=posts;status=200;await runtime.flush();assert.equal(posts,failed+1);assert.equal(JSON.parse([...storage.values()][0]).length,0);
 assert.ok(!JSON.stringify(payloads).includes('PRIVATE DOCUMENT'));assert.ok(!JSON.stringify(payloads).includes('token='));
 console.log('PASS #106 frontend: offline retention, deduplication, redaction, request correlation, authenticated retry and acknowledged delivery.');
+
+runtime.log(Error('Bitte zuerst die Fahrrad-Grunddaten prüfen.'),'component-save');await new Promise(r=>setImmediate(r));assert.equal(payloads.at(-1).entries[0].diagnosticCode,'bike.basics.invalid');console.log('PASS safe validation diagnostic codes.');
