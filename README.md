@@ -1,6 +1,6 @@
 # Gravelbike Garage
 
-**Version 1.3.0 (Releaseplanung: 1.3)**
+**Version 1.3.3 · Reifenpark · Teststand**
 
 Eine private Fahrradgarage als Web-App: Fahrräder und verbaute Bauteile verwalten, Serviceintervalle planen, Werkstattaufträge dokumentieren, Ersatzteilbestände führen und Dokumente sicher zuordnen. Die App lässt sich am Mac, auf dem Tablet und Smartphone im Browser oder als installierte Web-App nutzen.
 
@@ -12,6 +12,33 @@ Eine private Fahrradgarage als Web-App: Fahrräder und verbaute Bauteile verwalt
 - **Adressbuch und Dokumente:** Kontakte, Werkstatttermine, Rechnungen, Verträge und technische Unterlagen.
 - **Strava:** Zwei unabhängige Verbindungen mit jeweils eigener Client-ID und eigenem Client-Secret; Fahrräder getrennt zuordnen und Kilometer synchronisieren.
 - **Verwaltung:** Passwortschutz, optionale Zwei-Faktor-Anmeldung, Passkeys/YubiKey, Einstellungen, Handbuch und Versionsinformationen.
+
+## Neu in 1.3.3 · Reifenpark
+
+- Reifen direkt im Bauteilbereich des Fahrrads aus dem Reifenpark zuordnen oder mit denselben Steckbrief-Feldern neu anlegen und montieren; auch beim Anlegen des Fahrrads.
+- Einheitliche Dimensionen als zwei kompakte Eingabefelder, beispielsweise 700 × 45; ältere Größenangaben bleiben ohne ausdrückliche Änderung erhalten.
+- Eigener Steckbrief je Reifen mit optionalem Foto, Hersteller, Modell, Baujahr, Einsatzzweck, Profil, Tubeless-Angabe und Dimensionen.
+- Optionale Reifenpaare; jedes Exemplar behält eigene Daten und Laufleistung.
+- Übersicht aller montierten/eingelagerten Reifen, Suche und Neu-Badge nur vor der ersten Montage eines bestätigten neuen Reifens.
+- Schneller Reifenwechsel direkt am Fahrrad ohne Werkstattauftrag; vollständige Ein-/Ausbauhistorie über alle Fahrräder.
+- Gemeinsame, serverseitig atomare Buchung von Fahrradkonfiguration, Lager und Lebenslauf mit Versionsschutz und Wiederholungserkennung.
+- Vorhandene nicht einzeln erfasste Reifenbestände lassen sich ohne Mengenverdoppelung übernehmen.
+
+Issues #130–#133. Bereitstellung ausschließlich auf Test1. Kein GitHub-Release im Rahmen dieses Auftrags.
+
+## Neu in 1.3.2
+
+- **Serviceintervalle** ersetzt die Bezeichnung Serviceplan. Bevorstehende und überfällige Services sind oberhalb der Liste getrennt filterbar.
+- Unter **Werkstatt → Wartung** sind geplante Wartungen aus Serviceintervallen erreichbar.
+- **Wartung planen** startet mit vorausgewähltem Fahrrad, festem Auftragstyp Service und leerer Kurzbezeichnung.
+- Je Tätigkeit **Wartung oder Austausch** festlegen. Bei Austausch passen Ersatzteil und benötigte Menge zur gewählten Kategorie; Wartungsschritte können ohne Ersatzteil geplant werden.
+- Mehrere Arbeitsschritte, Anleitungen, geplantes Datum und Zusammenfassung gehen dem endgültigen Speichern voraus. Planung verändert keine Bestände oder verbauten Bauteile.
+
+Issues #124–#128. Bereitstellung zunächst ausschließlich auf Test1 und Test2; kein GitHub-Release veröffentlicht. [Releasenotes](docs/releases/1.3.2.md).
+
+## Bugfix in 1.3.1 · bugfixing
+
+Beim Anlegen eines Serviceintervalls erscheint die Auswahl „Service wird durchgeführt bei“ wieder korrekt. Die übernommene Fälligkeitsmaske und doppelte Navigationsbuttons sind behoben. Auswahl und eigene Angaben bleiben beim Navigieren erhalten und werden gespeichert. Bezug: #123.
 
 ## Neu in 1.3.0
 

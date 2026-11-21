@@ -92,19 +92,25 @@ function gt_validate_workshop(array $data, array $bikes): bool {
         foreach (['replacementKeys','componentCategories'] as $key) {
             if (isset($order[$key]) && (!is_array($order[$key]) || !array_is_list($order[$key]))) return false;
         }
+        if (isset($order['maintenancePlanning']) && !is_bool($order['maintenancePlanning'])) return false;
+        if (!empty($order['maintenancePlanning']) && ($order['type'] !== 'service' || empty($order['planId']))) return false;
         $steps = $order['steps'] ?? null;
         $parts = $order['parts'] ?? null;
         if (!is_array($steps) || !array_is_list($steps) || !is_array($parts) || !array_is_list($parts)) return false;
-        $stepIds = [];
+        $stepIds = []; $stepOperations = []; $stepCategories = []; $plannedReplacements = [];
         foreach ($steps as $step) {
             if (!is_array($step) || !gt_feature_text($step['id'] ?? null, 200) || $step['id'] === '' || isset($stepIds[$step['id']])
                 || !gt_feature_text($step['title'] ?? null, 800) || trim($step['title']) === ''
                 || !is_bool($step['done'] ?? null) || !gt_guide_links($step['guideIds'] ?? [], $guideIds)) return false;
+            if (isset($step['operation']) && !in_array($step['operation'], ['maintenance','replace'], true)) return false;
+            if (!empty($order['maintenancePlanning']) && !in_array($step['operation'] ?? '', ['maintenance','replace'], true)) return false;
             if (isset($step['componentKey']) && !gt_feature_text($step['componentKey'], 400)) return false;
             if (isset($step['category']) && !in_array($step['category'], array_merge(['none'],gt_component_categories($data)), true)) return false;
-            if (!empty($step['componentKey']) && !in_array($step['componentKey'], $order['replacementKeys'] ?? [], true)) return false;
-            $stepIds[$step['id']] = true;
+            if (($step['operation'] ?? '') !== 'maintenance' && !empty($step['componentKey']) && !in_array($step['componentKey'], $order['replacementKeys'] ?? [], true)) return false;
+            $stepIds[$step['id']] = true; $stepOperations[$step['id']] = $step['operation'] ?? ''; $stepCategories[$step['id']] = $step['category'] ?? '';
+            if (($step['operation'] ?? '') === 'replace' && !empty($step['componentKey'])) $plannedReplacements[] = $step['componentKey'];
         }
+        if (!empty($order['maintenancePlanning']) && array_values(array_unique($plannedReplacements)) !== ($order['replacementKeys'] ?? [])) return false;
         $partIds = [];
         foreach ($parts as $part) {
             if (!is_array($part) || !gt_feature_text($part['id'] ?? null, 200) || $part['id'] === '' || isset($partIds[$part['id']])
@@ -119,6 +125,10 @@ function gt_validate_workshop(array $data, array $bikes): bool {
             if (isset($part['stepId']) && (!gt_feature_text($part['stepId'], 200) || ($part['stepId'] !== '' && !isset($stepIds[$part['stepId']])))) return false;
             if (isset($part['positionId']) && (!gt_feature_text($part['positionId'], 200)
                 || ($part['positionId'] !== '' && !in_array($part['positionId'], array_column($inventory[$part['inventoryId']]['positions'] ?? [], 'id'), true)))) return false;
+            if (!empty($order['maintenancePlanning'])) {
+                if (($stepOperations[$part['stepId'] ?? ''] ?? '') !== 'replace' || $part['inventoryId'] === '') return false;
+                if (($inventory[$part['inventoryId']]['category'] ?? '') !== ($stepCategories[$part['stepId']] ?? '')) return false;
+            }
             if (isset($part['booking'])) {
                 $booking = $part['booking'];
                 if (!is_array($booking) || !gt_feature_text($booking['movementId'] ?? null, 200)
@@ -281,7 +291,8 @@ function gt_workshop_booking_transition(array $before, array $after): bool {
     }
     foreach ($orders as $id => $order) {
         $old = $oldOrders[$id] ?? [];
-        if($old)foreach(['planId','planOccurrence','planSnapshot'] as $field)if(($order[$field]??null)!==($old[$field]??null))return false;
+        if($old&&!empty($old['maintenancePlanning'])&&$order['bikeId']!==$old['bikeId'])return false;
+        if($old)foreach(['planId','planOccurrence','planSnapshot','maintenancePlanning'] as $field)if(($order[$field]??null)!==($old[$field]??null))return false;
         $log = $order['workLog'] ?? [];
         $oldLog = $old['workLog'] ?? [];
         if (!is_array($log) || !array_is_list($log) || count($log) > count($oldLog)+1

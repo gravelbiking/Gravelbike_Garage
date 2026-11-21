@@ -14,6 +14,18 @@ if(($argv[1]??'')==='writer'){
 }
 if(($argv[1]??'')==='unhandled'){gt_log_install();trigger_error('password=never-log-this-password',E_USER_WARNING);throw new RuntimeException('secret=private-client-secret');}
 try{
+ verify(gt_log_level()==='info','default logging level');
+ verify(gt_log('debug','backend','hidden debug'),'filtered debug success');
+ verify(!(glob($root.'/logs/*.jsonl')?:[]),'debug disabled by default');
+ file_put_contents($root.'/data/logging-level.json','{"level":"debug"}');
+ verify(gt_log_level()==='debug','instance debug override');
+ verify(gt_log('debug','backend','Diagnostic test',['module'=>'bikes']),'debug logging');
+ $debugFiles=glob($root.'/logs/*.jsonl');verify(count($debugFiles)===1,'debug file');
+ verify(json_decode(trim(file_get_contents($debugFiles[0])),true)['level']==='debug','debug severity retained');
+ unlink($debugFiles[0]);unlink($root.'/data/logging-level.json');
+ verify(gt_log_diagnostic('bike.basics.invalid')==='Bitte zuerst die Fahrrad-Grunddaten prüfen.','known safe diagnostic');
+ verify(gt_log_diagnostic('password=private')===null,'untrusted diagnostics rejected');
+ verify(gt_log_level()==='info','override removed');
  verify(gt_log('error','external-api','Failure password=never-log-this-password Bearer top-secret-token code=secret-code state=private-state https://user:pass@example.org/x?secret=abc',['module'=>'strava','connection'=>2,'client_id'=>'295633','error_code'=>'invalid','provider_field'=>'redirect_uri','redirect_uri'=>'https://user:pass@example.org/api.php/callback?code=secret-code&state=private-state','request_id'=>'1234567890abcdef1234567890abcdef','password'=>'never-log-this-password','response_body'=>'PRIVATE DOCUMENT']),'initial write');
  $files=glob($root.'/logs/*.jsonl');verify(count($files)===1,'stream file');$raw=file_get_contents($files[0]);$r=json_decode(trim($raw),true,512,JSON_THROW_ON_ERROR);
  foreach(['never-log-this-password','top-secret-token','secret-code','private-state','PRIVATE DOCUMENT','user:pass'] as $secret)verify(!str_contains($raw,$secret),'secret leaked');

@@ -3,10 +3,10 @@ const data={orders:[],bikes:[{id:'b',name:'Rad'}]};const c=vm.createContext({dat
 vm.runInContext(await readFile('src/service-wizards.js','utf8'),c);const run=x=>vm.runInContext(x,c);
 c.plan={id:'p',bikeId:'b',title:'Kette',nextDate:'2026-12-01',nextKm:null,performer:'self'};
 assert.equal(run('plannedWorkshop(plan)'),undefined);
-assert.match(run('serviceRow(plan)'),/Werkstattauftrag planen/);assert.doesNotMatch(run('serviceRow(plan)'),/Erledigen|Material planen/);
+assert.match(run('serviceRow(plan)'),/Wartung planen/);assert.doesNotMatch(run('serviceRow(plan)'),/Erledigen|Material planen/);
 data.orders.push({id:'old',planId:'p',planOccurrence:'["p","2025-12-01",null]',completedAt:'2025-12-01'});assert.equal(run('plannedWorkshop(plan)'),undefined);
-data.orders.push({id:'new',planId:'p',planOccurrence:run('serviceOccurrence(plan)')});assert.equal(run('plannedWorkshop(plan).id'),'new');assert.doesNotMatch(run('serviceRow(plan)'),/Werkstattauftrag planen/);assert.match(run('serviceRow(plan)'),/Werkstattauftrag: Ja/);
-data.orders[1].cancelledAt='2026-11-10';assert.match(run('serviceRow(plan)'),/Werkstattauftrag planen/);
+data.orders.push({id:'new',planId:'p',planOccurrence:run('serviceOccurrence(plan)')});assert.equal(run('plannedWorkshop(plan).id'),'new');assert.doesNotMatch(run('serviceRow(plan)'),/Wartung planen/);assert.match(run('serviceRow(plan)'),/Wartung geplant: Ja/);
+data.orders[1].cancelledAt='2026-11-10';assert.match(run('serviceRow(plan)'),/Wartung planen/);
 console.log('PASS 1.2.4: occurrence-specific planning, previous/completed/cancelled jobs, visible status and streamlined actions.');
 
 // Issue #95: a single task spans category, spare-part and quantity screens.

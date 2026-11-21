@@ -102,11 +102,11 @@ const componentSpecifications={
 };
 const powerMeterFields=[['powerManufacturer','Hersteller'],['powerModel','Modell'],['powerSerial','Seriennummer']];
 const componentTypeName=name=>Object.keys(componentSpecifications).concat('Innenlager').find(type=>type.toLowerCase()===String(name).trim().toLowerCase());
-const hasComponentSerial=name=>!['Kassette','Kurbel','Innenlager','Kette'].includes(componentTypeName(name));
+const hasComponentSerial=name=>!['Kassette','Kurbel','Innenlager','Kette','Reifen','Vorderreifen','Hinterreifen'].includes(componentTypeName(name));
 function componentSpecificationFields(c){
  const type=componentTypeName(c.name);
  const field=([key,label,step],visible)=>`<div data-spec="${key}" ${visible?'':'hidden'}>${input(key,label,c[key],step?'number':'text',step?`min="${step}" step="${step}" max="10000"`:'maxlength="200"')}</div>`;
- return `<div data-spec="componentSerial" ${hasComponentSerial(c.name)?'':'hidden'}>${input('componentSerial','Seriennummer',c.serial,'text','maxlength="200"')}</div>
+ return `<div data-spec="componentSerial" ${componentCategory(c)!=='Reifen'&&hasComponentSerial(c.name)?'':'hidden'}>${input('componentSerial','Seriennummer',c.serial,'text','maxlength="200"')}</div>
  ${Object.entries(componentSpecifications).flatMap(([name,fields])=>fields.map(spec=>field(spec,type===name))).join('')}
  <div data-spec="powerMeter" ${type==='Kurbel'?'':'hidden'}>${select('powerMeter','Powermeter',[['no','Nein'],['yes','Ja']],c.powerMeter?'yes':'no')}</div>
  <fieldset data-spec="powerDetails" class="supply-fieldset span2" ${type==='Kurbel'&&c.powerMeter?'':'hidden'}><legend>Powermeter</legend><div class="form-grid">${powerMeterFields.map(([key,label])=>input(key,label,c[key],'text','maxlength="200"')).join('')}</div></fieldset>`;
@@ -114,7 +114,7 @@ function componentSpecificationFields(c){
 function updateComponentSpecifications(row){
  const type=componentTypeName(row.querySelector('[name="componentName"]').value);
  const keys=new Set((componentSpecifications[type]||[]).map(([key])=>key));
- if(hasComponentSerial(type))keys.add('componentSerial');
+ if(row.querySelector('[name=componentCategory]').value!=='Reifen'&&hasComponentSerial(type))keys.add('componentSerial');
  if(type==='Kurbel'){
   keys.add('powerMeter');
   if(row.querySelector('[name="powerMeter"]').value==='yes')keys.add('powerDetails');
@@ -138,7 +138,7 @@ function readComponentSpecifications(value,name,prior){
 }
 function componentSpecificationsView(c){
  const type=componentTypeName(c.name);
- const fields=[...(hasComponentSerial(c.name)?[['Seriennummer',c.serial]]:[]),
+ const fields=[...(componentCategory(c)!=='Reifen'&&hasComponentSerial(c.name)?[['Seriennummer',c.serial]]:[]),
   ...(componentSpecifications[type]||[]).map(([key,label])=>[label,c[key]])];
  if(type==='Kurbel'){
   fields.push(['Powermeter',c.powerMeter?'Ja':'Nein']);

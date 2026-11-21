@@ -1,14 +1,20 @@
 const workshopOrder=id=>data.orders.find(o=>o.id===id);
-const orderType=o=>o.type==='service'?'Service':'Reparatur';
+const isIntervalMaintenance=o=>Boolean(o?.maintenancePlanning||o?.planId);
+const orderType=o=>isIntervalMaintenance(o)?'Wartung':o.type==='service'?'Service':'Reparatur';
 const orderBike=o=>bike(o.bikeId)?.name||o.externalBike;
 const orderLink=o=>recordRoute('order',o.id);
 
 function ordersPage(){
- const orders=data.orders.slice().reverse();
- return heading('Werkstattaufträge','Service und Reparaturen für eigene und fremde Fahrräder.',
+ const orders=data.orders.filter(o=>!isIntervalMaintenance(o)).slice().reverse();
+ return heading('Werkstattaufträge','Individuelle Aufträge unabhängig von Serviceintervallen.',
   '<button class="primary" data-action="order-new">＋ Auftrag anlegen</button>')+
   (orders.length?`<div class="panel">${orders.map(o=>`<a class="list-row" href="${orderLink(o)}"><div class="row-copy"><strong>${esc(o.title)}</strong><small>${esc(orderType(o))} · ${esc(orderBike(o))} · ${orderState(o)}</small></div><span>${o.steps.filter(s=>s.done).length} / ${o.steps.length} Schritte ↗</span></a>`).join('')}</div>`:
   empty('Noch keine Aufträge.','Lege einen Auftrag für die nächste Arbeit in deiner Werkstatt an.'));
+}
+
+function maintenancePage(){
+ const orders=data.orders.filter(isIntervalMaintenance).slice().reverse();
+ return heading('Wartung','Geplante Wartungen aus deinen Serviceintervallen.','<a class="primary" href="#service">Serviceintervalle anzeigen</a>')+(orders.length?`<div class="panel">${orders.map(o=>`<a class="list-row" href="${orderLink(o)}"><div class="row-copy"><strong>${esc(o.title)}</strong><small>${esc(orderBike(o))} · ${date(o.plannedDate)} · ${orderState(o)}</small></div><span>${o.steps.length} Arbeitsschritte ↗</span></a>`).join('')}</div>`:empty('Noch keine Wartungen geplant.','Öffne die Serviceintervalle und wähle Wartung planen.'));
 }
 
 const orderLocked=order=>Boolean(order.completedAt||order.cancelledAt);
@@ -33,8 +39,8 @@ function editOrder(id,planId='',focusStep,tireTarget,draft){
  // Keep earlier free-text work and attachments in existing records.
  if(!o.steps.length&&o.description)o.steps.push({id:uid(),title:o.description.slice(0,200),done:false,guideIds:[]});
  const choices=data.bikes.filter(b=>!b.archived||b.id===o.bikeId);
- modal(existing?'Werkstattauftrag bearbeiten':'Werkstattauftrag anlegen',draft?.html||`<div class="form-grid">
- ${select('type','Auftragstyp',[['service','Service'],['repair','Reparatur']],o.type)}
+ modal(existing?(isIntervalMaintenance(o)?'Wartung bearbeiten':'Werkstattauftrag bearbeiten'):'Werkstattauftrag anlegen',draft?.html||`<div class="form-grid">
+ ${select('type','Auftragstyp',o.maintenancePlanning?[['service','Service']]:[['service','Service'],['repair','Reparatur']],o.type)}
  ${select('bikeId','Fahrrad',[['','Fremdes Fahrrad'],...choices.map(b=>[b.id,b.name])],o.bikeId)}
  ${input('externalBike','Fremdes Fahrrad beschreiben',o.externalBike,'text','maxlength="200"')}
  ${input('title','Auftragskurzbezeichnung',o.title,'text','required maxlength="200"')}</div>
@@ -44,6 +50,7 @@ function editOrder(id,planId='',focusStep,tireTarget,draft){
   const externalBike=bikeId?'':f.get('externalBike').trim(),title=f.get('title').trim();
   if(!title)throw Error('Bitte gib dem Auftrag eine Kurzbezeichnung.');
   if(bikeId&&!bike(bikeId))throw Error('Das ausgewählte Fahrrad ist nicht mehr vorhanden.');
+  if(o.maintenancePlanning&&bikeId!==o.bikeId)throw Error('Die geplante Wartung behält ihr zugeordnetes Fahrrad.');
   if(!bikeId&&!externalBike)throw Error('Beschreibe das fremde Fahrrad kurz.');
   const rows=[...editor.querySelectorAll('[data-work-step]')];
   const parts=[...editor.querySelectorAll('[data-draft-part]')].map(row=>readOrderDraftPart(row,o)).filter(Boolean);
@@ -58,12 +65,12 @@ function editOrder(id,planId='',focusStep,tireTarget,draft){
    }
    const guideIds=guideId===previous?.guideIds?.[0]?previous.guideIds:(guideId?[guideId]:[]);
    const done=Boolean(previous?.done&&previous.title===title&&(previous.componentKey||'')===componentKey&&
-    JSON.stringify(previous.guideIds||[])===JSON.stringify(guideIds));
-   return {id:row.dataset.workStep,title,done,category:row.querySelector('[data-step-category]').value,componentKey,guideIds};
+    JSON.stringify(previous.guideIds||[])===JSON.stringify(guideIds)&&(!o.maintenancePlanning||previous.operation===row.querySelector('[data-step-operation]')?.value));
+   return {...previous,id:row.dataset.workStep,title,done,...(o.maintenancePlanning?{operation:row.querySelector('[data-step-operation]')?.value||previous?.operation||'maintenance'}:{}),category:row.querySelector('[data-step-category]').value,componentKey,guideIds};
   });
   const allowed=new Set(plannedOrderComponents(bike(bikeId)).map(row=>row.key));
   const replacementKeys=[...new Set([...(bikeId===o.bikeId?(o.replacementKeys||[]).filter(key=>!o.steps.some(step=>step.componentKey===key)):[]),
-   ...steps.map(step=>step.componentKey)].filter(key=>key&&allowed.has(key)))];
+   ...steps.filter(step=>step.operation!=='maintenance').map(step=>step.componentKey)].filter(key=>key&&allowed.has(key)))];
   const updated={...o,type,bikeId,externalBike,title,steps,parts,componentCategories:[],replacementKeys};
   if(await mutate(()=>{
    if(existing)data.orders=data.orders.map(x=>x.id===id?updated:x);
@@ -75,7 +82,9 @@ function editOrder(id,planId='',focusStep,tireTarget,draft){
   row.querySelector('legend').textContent='Arbeitsschritt '+(index+1);
  });
  const addStep=(step={id:uid(),title:'',guideIds:[]},prefill=true,optional=false)=>{
+  if(o.maintenancePlanning&&!step.operation)step.operation='maintenance';
   const parts=o.parts.filter(part=>part.stepId===step.id);
+  if(step.operation==='maintenance')prefill=false;
   if(prefill&&!parts.length)parts.push({id:uid(),quantity:1,placeholder:true});
   host.insertAdjacentHTML('beforeend',orderDraftStep(step,parts,optional));
   updateDraftComponents(host.lastElementChild,editor.elements.bikeId.value,step.componentKey);
@@ -125,6 +134,7 @@ function orderDraftStep(step,parts,optional=false){
  const locked=parts.some(part=>part.booking);
  return `<fieldset class="order-draft-step" data-work-step="${esc(step.id)}" ${optional?'data-empty-step':''}><legend>Arbeitsschritt</legend>
  <div class="form-grid"><label class="span2">Geplante Arbeiten<input data-step-title ${optional?'':'required'} maxlength="200" value="${esc(step.title)}"></label>
+ ${step.operation?select('stepOperation','Tätigkeit',[['maintenance','Wartung'],['replace','Austausch']],step.operation).replace('<select ','<select data-step-operation '):''}
  ${select('orderCategory','Kategorie',orderCategories(),step.category||'none').replace('<select ','<select data-step-category ')}
  <label>Verbautes Bauteil<select data-step-component></select></label></div>
  <div data-draft-parts>${parts.map(orderDraftPart).join('')}</div>
@@ -221,8 +231,8 @@ function orderDashboard(id){
   ?[...previous.querySelectorAll('details[data-order-guide][open]')].map(el=>el.dataset.orderGuide):[]);
  const locked=orderLocked(o);
  const action=(key,label,item='',style='small-button')=>locked?'':`<button class="${style}" data-action="${key}" data-id="${esc(o.id)}" data-item-id="${esc(item)}">${label}</button>`;
- return '<a class="back" href="#orders">← Werkstattaufträge</a>'+
-  heading(esc(o.title),esc(orderType(o)+' · '+orderBike(o)),`<span class="badge">${orderState(o)}</span>`+action('order-edit','Auftrag bearbeiten'),'WERKSTATTAUFTRAG')+
+ return (isIntervalMaintenance(o)?'<a class="back" href="#maintenance">← Wartung</a>':'<a class="back" href="#orders">← Werkstattaufträge</a>')+
+  heading(esc(o.title),esc(orderType(o)+' · '+orderBike(o)),`<span class="badge">${orderState(o)}</span>`+action('order-edit',isIntervalMaintenance(o)?'Wartung bearbeiten':'Auftrag bearbeiten'),isIntervalMaintenance(o)?'WARTUNG':'WERKSTATTAUFTRAG')+
   `<div class="order-dashboard" data-workshop-order="${esc(o.id)}">
    <section class="panel order-section"><h2>Auftrag</h2><p>${esc(o.title)}</p>${o.plannedDate?`<p>Geplante Durchführung: ${date(o.plannedDate)}</p>`:''}</section>
    ${orderReplacementView(o)}
@@ -234,7 +244,7 @@ function orderDashboard(id){
    <p class="help">${next?'Als Nächstes · '+esc(next.title):o.steps.length?'Alle Arbeitsschritte sind erledigt.':'Hier erscheinen die geplanten Arbeiten.'}</p>
    <ol class="order-steps">${o.steps.map(step=>`<li class="${step===next?'order-next':''}">
     <div class="list-row"><div class="row-copy"><strong>${esc(step.title)}</strong>
-    <small>${esc(orderReplacementRows(o).find(row=>row.key===step.componentKey)?.component.name||(step.componentNotListed?'Bauteil nicht gelistet':''))}</small></div>
+    <small>${step.operation==='maintenance'?'Wartung · ':step.operation==='replace'?'Austausch · ':''}${esc((step.operation==='maintenance'?plannedOrderComponents(bike(o.bikeId)).find(row=>row.key===step.componentKey):orderReplacementRows(o).find(row=>row.key===step.componentKey))?.component.name||(step.componentNotListed?'Bauteil nicht gelistet':''))}</small></div>
     ${orderCheckbox(o,step,'step','Erledigt',step.title,step.done)}${action('order-step','Bearbeiten',step.id)}</div>
     <h3>Ersatzteile für diesen Arbeitsschritt</h3>${o.parts.filter(part=>part.stepId===step.id).map(part=>orderPartRow(o,part)).join('')||'<p class="help">Keine Ersatzteile zugeordnet.</p>'}
     ${orderGuides(step.guideIds,step.id,expanded)}</li>`).join('')}</ol></section>

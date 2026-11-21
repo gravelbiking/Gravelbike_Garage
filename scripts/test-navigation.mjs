@@ -14,7 +14,7 @@ const context=vm.createContext({
  document:{activeElement:null,documentElement:{dataset:{}},addEventListener:(name,fn)=>handlers.set(name,fn)},
  notify(){},updatePanel:()=>'<div id="updatePanel"></div>',refreshUpdates(){updates++;},
  dashboard(){},bikesPage(){},archivePage(){},servicePage(){},historyPage(){},computersPage(){},inventoryPage(){},
- toolsPage(){},documentsPage(){},addressBook(){},refreshStrava(){},refreshSecurityStatus(){},refreshSystemStatus(){}
+ maintenancePage(){},toolsPage(){},documentsPage(){},addressBook(){},refreshStrava(){},refreshSecurityStatus(){},refreshSystemStatus(){}
 });
 for(const file of ['navigation','administration']){
  let source=await readFile(new URL('../src/'+file+'.js',import.meta.url),'utf8');
@@ -65,7 +65,20 @@ console.log('PASS: password warning at 30-day boundary and expiry; no warning fo
 
 assert.match(run('whatsNewNotice()'),/Neues in dieser Version!/);
 const currentNotes=run('releaseNotes(true)');
-assert.ok(currentNotes.includes(metadata.version));assert.ok(currentNotes.includes(metadata.releaseName));assert.match(currentNotes,/Werkstatt/);
+assert.ok(currentNotes.includes(metadata.version));assert.ok(currentNotes.includes(metadata.releaseName));assert.doesNotMatch(currentNotes,/Für diese Version sind noch keine Neuerungen hinterlegt/);
 assert.doesNotMatch(currentNotes,/1\.2\.2\.a/);
 assert.equal((run('releaseNotes()').match(/<h2>1\.2\.4/g)||[]).length,1);
 console.log('PASS: dashboard release notice, current-version-only notes, matching metadata and no duplicate current release.');
+
+context.data.orders=[{id:'legacy',planId:'deleted-plan'},{id:'new',maintenancePlanning:true},{id:'independent',type:'service'}];
+for(const id of ['legacy','new']){location.hash='#order/'+id;run("renderNavigation('order')");assert.equal(nodes.get('#crumb').textContent,'Meine Fahrräder / Wartung');}
+location.hash='#order/independent';run("renderNavigation('order')");assert.equal(nodes.get('#crumb').textContent,'Werkstatt / Werkstattaufträge');
+assert.equal(run("navModules.find(m=>m.id==='bikes').children.some(c=>c[0]==='maintenance')"),true);
+assert.equal(run("navModules.find(m=>m.id==='workshop').children.some(c=>c[0]==='maintenance')"),false);
+console.log('PASS #129: new/legacy maintenance belongs to Meine Fahrräder; independent orders remain in Werkstatt.');
+
+assert.equal(run("navModules.find(m=>m.children?.some(([id])=>id==='tirepark')).id"),'inventory');
+assert.equal(run("navModules.find(m=>m.id==='bikes').children.some(([id])=>id==='tirepark')"),false);
+location.hash='#tirepark';run('renderNavigation("tirepark")');assert.equal(nodes.get('#crumb').textContent,'Lager / Reifenpark');assert.match(nodes.get('#nav').innerHTML,/href="#tirepark" aria-current="page"/);
+location.hash='#tire/test';run('renderNavigation("tire")');assert.equal(nodes.get('#crumb').textContent,'Lager / Reifenpark');
+console.log('PASS Reifenpark belongs to Lager, including tire profile navigation and existing bookmarks.');

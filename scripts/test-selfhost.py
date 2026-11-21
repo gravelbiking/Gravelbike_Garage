@@ -159,6 +159,16 @@ def run_case(prefix):
             assert 'NEVER-IN-LOGS' not in json.dumps(rows)
             assert call('client-error','POST',{'entries':[]},anonymous=True)[0]==401
             print('PASS #106 HTTP: authenticated reports, module/correlation, secret exclusion and server error response linkage.')
+            debug_config=private/'data/logging-level.json'
+            debug_config.write_text('{"level":"debug"}')
+            assert call('client-error','POST',{'entries':[{'context':'component-save','kind':'Error','page':'parking','diagnosticCode':'bike.basics.invalid','message':'private input'}]})[0]==200
+            assert call('auth')[0]==200
+            rows=[json.loads(line) for file in (private/'logs').glob('*.jsonl') for line in file.read_text().splitlines()]
+            assert any(r.get('error_code')=='bike.basics.invalid' and r['message']=='Bitte zuerst die Fahrrad-Grunddaten prüfen.' for r in rows)
+            assert any(r['level']=='debug' and r.get('operation')=='http.complete' for r in rows)
+            assert 'private input' not in json.dumps(rows)
+            debug_config.unlink()
+            print('PASS DEBUG HTTP: per-instance switch, completed API requests and server-allowlisted validation messages; no raw form data.')
 
             # Self-chosen setup password is immediately usable, including after a new login.
             assert result['passwordChangeRequired'] is False
@@ -713,6 +723,12 @@ def run_case(prefix):
             check_release125(call,project)
             from release13_case import check_release13
             check_release13(call,project)
+            from release132_case import check_release132
+            check_release132(call,project)
+            from release133_case import check_release133
+            check_release133(call,project,private,configuration)
+            from issue138_case import check_issue138
+            check_issue138(call,project)
             assert call('logout', 'POST')[0] == 200
             for _ in range(3):
                 assert call('auth','POST',{**credentials,'password':'incorrect'})[0]==401

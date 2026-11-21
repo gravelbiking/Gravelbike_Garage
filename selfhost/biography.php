@@ -50,12 +50,13 @@ function gt_bio(array $garage, string $bikeId, string $kind, bool $archive = fal
         foreach ($parts as $c) {
             $html .= '<article><strong>'.$e($c['name']).'</strong><dl>';
             foreach (['manufacturer'=>'Hersteller','model'=>'Modell','serial'=>'Seriennummer','originalPartNumber'=>'Original-Teilenummer','installedDate'=>'Einbaudatum','installedKm'=>'Kilometerstand beim Einbau'] as $key=>$label) {
-                $v = $c[$key] ?? ''; if ($v === '' || $v === null) continue;
+                $v = $c[$key] ?? ''; if($key==='serial'&&$category==='Reifen')continue; if ($v === '' || $v === null) continue;
                 if ($key === 'installedDate') $v = $date($v); if ($key === 'installedKm') $v = $kmNumber($v).' km';
                 $html .= '<div><dt>'.$label.'</dt><dd>'.$e($v).'</dd></div>';
             }
             if (isset($c['installedKm']) && $b['km'] >= $c['installedKm']) $html .= '<div><dt>Laufleistung seit Einbau</dt><dd>'.$kmNumber($b['km']-$c['installedKm']).' km</dd></div>';
             foreach (['axleDimension'=>'Achsdimension','brakeMount'=>'Bremsaufnahme','rimHeight'=>'Felgenhöhe (mm)','internalWidth'=>'Innenmaulweite (mm)','rimMaterial'=>'Felgenmaterial','bearingServiceDate'=>'Lagerservicedatum','freehub'=>'Freilaufkörper'] as $key=>$label) if (isset($c['wheel'][$key]) && $c['wheel'][$key] !== '') $html .= '<div><dt>'.$label.'</dt><dd>'.$e($key === 'bearingServiceDate' ? $date($c['wheel'][$key]) : $c['wheel'][$key]).'</dd></div>';
+            if (!empty($c['tireDimensions'])) $html .= '<div><dt>Dimensionen</dt><dd>'.$e($c['tireDimensions']).'</dd></div>';
             if (isset($c['tireWidth'])) $html .= '<div><dt>Reifenbreite</dt><dd>'.$e($number($c['tireWidth']).' '.($c['tireUnit'] ?? 'mm')).'</dd></div>';
             $html .= '</dl>'.$partArchive($c).'</article>';
         }
