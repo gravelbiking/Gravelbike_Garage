@@ -58,3 +58,17 @@ Deaktivierbarkeit erhalten. Andere Instanzen werden in diesem Auftrag nicht geä
 
 Bereitstellung dieses Auftrags: ausschließlich Test1. Kein GitHub-Quellcode-Push,
 kein globaler Rollout, kein GitHub-Release beauftragt.
+
+Ergänzung Fahrradzuordnung und Dimensionen
+Im Fahrrad-Bauteilbereich und im Fahrradformular starten Reifen aus Reifenpark
+hinzufügen bzw. Neuen Reifen hinzufügen denselben zweistufigen Assistenten.
+Fahrrad-Grunddaten werden vor dem Übergang gespeichert; eine tabgebundene
+Fortsetzungskennung öffnet den Assistenten nach dem regulären Neuladen.
+create+mount (API saveMount) legt Exemplar und Montage in derselben Transaktion
+an. Besetzte Positionen führen zur vollständigen Rücknahme; zum Austausch bleibt
+Reifen wechseln vorgesehen. Das Profilformular wird mit dem Reifenpark geteilt.
+Dimensionen: dimensionSize × width, z.B. 700 × 45. Die bisherigen Metadaten
+dimensionLabel und diameter bleiben zur Kompatibilität gespeichert. Ohne
+Änderung der beiden Dimensionsfelder werden alte Angaben nicht umgedeutet.
+Neue dimensionsEdited-Eingaben erzeugen die einheitliche Anzeige; Durchmesser
+und freies Größenbezeichnungsfeld entfallen in der Eingabe.

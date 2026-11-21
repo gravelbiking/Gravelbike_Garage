@@ -15,6 +15,8 @@ Eine private Fahrradgarage als Web-App: Fahrräder und verbaute Bauteile verwalt
 
 ## Neu in 1.3.3 · Reifenpark
 
+- Reifen direkt im Bauteilbereich des Fahrrads aus dem Reifenpark zuordnen oder mit denselben Steckbrief-Feldern neu anlegen und montieren; auch beim Anlegen des Fahrrads.
+- Einheitliche Dimensionen als zwei kompakte Eingabefelder, beispielsweise 700 × 45; ältere Größenangaben bleiben ohne ausdrückliche Änderung erhalten.
 - Eigener Steckbrief je Reifen mit optionalem Foto, Hersteller, Modell, Baujahr, Einsatzzweck, Profil, Tubeless-Angabe und Dimensionen.
 - Optionale Reifenpaare; jedes Exemplar behält eigene Daten und Laufleistung.
 - Übersicht aller montierten/eingelagerten Reifen, Suche und Neu-Badge nur vor der ersten Montage eines bestätigten neuen Reifens.

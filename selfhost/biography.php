@@ -56,6 +56,7 @@ function gt_bio(array $garage, string $bikeId, string $kind, bool $archive = fal
             }
             if (isset($c['installedKm']) && $b['km'] >= $c['installedKm']) $html .= '<div><dt>Laufleistung seit Einbau</dt><dd>'.$kmNumber($b['km']-$c['installedKm']).' km</dd></div>';
             foreach (['axleDimension'=>'Achsdimension','brakeMount'=>'Bremsaufnahme','rimHeight'=>'Felgenhöhe (mm)','internalWidth'=>'Innenmaulweite (mm)','rimMaterial'=>'Felgenmaterial','bearingServiceDate'=>'Lagerservicedatum','freehub'=>'Freilaufkörper'] as $key=>$label) if (isset($c['wheel'][$key]) && $c['wheel'][$key] !== '') $html .= '<div><dt>'.$label.'</dt><dd>'.$e($key === 'bearingServiceDate' ? $date($c['wheel'][$key]) : $c['wheel'][$key]).'</dd></div>';
+            if (!empty($c['tireDimensions'])) $html .= '<div><dt>Dimensionen</dt><dd>'.$e($c['tireDimensions']).'</dd></div>';
             if (isset($c['tireWidth'])) $html .= '<div><dt>Reifenbreite</dt><dd>'.$e($number($c['tireWidth']).' '.($c['tireUnit'] ?? 'mm')).'</dd></div>';
             $html .= '</dl>'.$partArchive($c).'</article>';
         }
@@ -72,7 +73,7 @@ function gt_bio(array $garage, string $bikeId, string $kind, bool $archive = fal
             $periods=array_values(array_filter($t['history'],fn($h)=>$h['bikeId']===$bikeId));
             if(($t['mount']['bikeId']??'')===$bikeId)array_unshift($periods,$t['mount']+['current'=>true]);
             if(!$periods)continue;
-            $tireHtml.='<article><h3>'.$e(trim($t['manufacturer'].' '.$t['model'])?:'Reifen '.$t['id']).'</h3><p>Gesamtlaufleistung Reifen: '.($t['totalMileage']===null?'Unbekannt; '.$kmNumber($t['knownMileage']).' km dokumentiert':$kmNumber($t['totalMileage']).' km').'</p><ul>';
+            $tireHtml.='<article><h3>'.$e(trim($t['manufacturer'].' '.$t['model'])?:'Reifen '.$t['id']).'</h3><p>Dimensionen: '.$e($t['dimensions']?:'Nicht angegeben').'</p><p>Gesamtlaufleistung Reifen: '.($t['totalMileage']===null?'Unbekannt; '.$kmNumber($t['knownMileage']).' km dokumentiert':$kmNumber($t['totalMileage']).' km').'</p><ul>';
             foreach($periods as $h)$tireHtml.='<li>'.$e($h['position']??'Position nicht dokumentiert').' · angebaut '.$date($h['installedDate']??'').' bei '.$kmNumber($h['installedKm']??null).' km · '.(!empty($h['current'])?'noch montiert, aktueller Stand '.$kmNumber($h['currentKm']).' km':'abgebaut '.$date($h['removedDate']??'').' bei '.$kmNumber($h['removedKm']??null).' km').' · in dieser Montage '.(($h['mileage']??null)===null?'Laufleistung unbekannt':$kmNumber($h['mileage']).' km').'</li>';
             $tireHtml.='</ul></article>';
         }if($tireHtml!=='')$html.='<h2>Reifenpark · Montagehistorie dieses Fahrrads</h2>'.$tireHtml;

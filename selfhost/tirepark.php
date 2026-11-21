@@ -3,6 +3,11 @@ declare(strict_types=1);
 // Reifenpark is a projection of existing physical tire instances, not a second stock ledger.
 function gt_tp_enabled(): bool { return (gt_config()['features']['tirepark']??true)!==false; }
 function gt_tp_id(array $b,array $c,int $index): string { return $c['tireId']??'legacy-'.substr(hash('sha256',$b['id'].':'.gt_component_key($c,$index)),0,24); }
+function gt_tp_dimensions(array $p,array $c=[]): string {
+    if(isset($p['dimensionSize']))return implode(' × ',array_values(array_filter([$p['dimensionSize'],$p['width']??''],fn($v)=>$v!=='')));
+    if(!empty($p['dimensionLabel']))return $p['dimensionLabel'];
+    return implode(' × ',array_values(array_filter([$p['diameter']??'', $p['width']??(isset($c['tireWidth'])?(string)$c['tireWidth']:'')],fn($v)=>$v!=='')));
+}
 function gt_tp_profiles(array $g): array {return array_column($g['tireProfiles']??[],null,'id');}
 function gt_tp_records(array $g): array {
     require_once __DIR__.'/biography.php';$rows=[];$profiles=gt_tp_profiles($g);
@@ -10,7 +15,7 @@ function gt_tp_records(array $g): array {
         $old=$rows[$id]??null;
         if($old&&($old['mount']||(!$mount&&count($old['history'])>count($history))))return;
         $p=$profiles[$id]??[];
-        $rows[$id]=['id'=>$id,'manufacturer'=>$p['manufacturer']??$c['manufacturer']??'','model'=>$p['model']??$c['model']??'','manufactureYear'=>$p['manufactureYear']??'','purpose'=>$p['purpose']??'','tread'=>$p['tread']??'','tubeless'=>$p['tubeless']??null,'dimensionLabel'=>$p['dimensionLabel']??'','width'=>$p['width']??(isset($c['tireWidth'])?(string)$c['tireWidth']:''),'diameter'=>$p['diameter']??'','unit'=>$p['unit']??$c['tireUnit']??'mm','photo'=>$p['photo']??null,'pairId'=>$p['pairId']??'','pairRole'=>$p['pairRole']??'','location'=>$stock['location']??'','usageState'=>$p['usageState']??'unknown','initialMileage'=>$p['initialMileage']??null,'history'=>$history,'mount'=>$mount,'stock'=>$stock,'archived'=>$archived];
+        $rows[$id]=['id'=>$id,'manufacturer'=>$p['manufacturer']??$c['manufacturer']??'','model'=>$p['model']??$c['model']??'','manufactureYear'=>$p['manufactureYear']??'','purpose'=>$p['purpose']??'','tread'=>$p['tread']??'','tubeless'=>$p['tubeless']??null,'dimensionSize'=>$p['dimensionSize']??null,'dimensions'=>gt_tp_dimensions($p,$c),'dimensionLabel'=>$p['dimensionLabel']??'','width'=>$p['width']??(isset($c['tireWidth'])?(string)$c['tireWidth']:''),'diameter'=>$p['diameter']??'','unit'=>$p['unit']??$c['tireUnit']??'mm','photo'=>$p['photo']??null,'pairId'=>$p['pairId']??'','pairRole'=>$p['pairRole']??'','location'=>$stock['location']??'','usageState'=>$p['usageState']??'unknown','initialMileage'=>$p['initialMileage']??null,'history'=>$history,'mount'=>$mount,'stock'=>$stock,'archived'=>$archived];
     };
     foreach($g['inventory']??[] as $s)foreach($s['positions']??[] as $p)if(isset($p['tire']))$add($p['tire']['id'],$p['tire']['component'],$p['tire']['history'],null,['inventoryId'=>$s['id'],'positionId'=>$p['id'],'available'=>$p['quantity']==1,'location'=>$p['location']]);
     foreach($g['bikes'] as $b){
@@ -33,7 +38,14 @@ function gt_tp_records(array $g): array {
 }
 function gt_tp_profile(array $body,array $record=[]): array {
     $p=[];
-    foreach(['manufacturer'=>200,'model'=>200,'manufactureYear'=>4,'purpose'=>500,'tread'=>500,'dimensionLabel'=>200,'width'=>80,'diameter'=>80,'unit'=>40,'usageState'=>20,'pairRole'=>10] as $k=>$limit){$v=$body[$k]??'';if(!is_string($v)||strlen($v)>$limit)throw new InvalidArgumentException('Bitte die Reifenangaben prüfen.');$p[$k]=trim($v);}
+    foreach(['manufacturer'=>200,'model'=>200,'manufactureYear'=>4,'purpose'=>500,'tread'=>500,'dimensionSize'=>80,'dimensionLabel'=>200,'width'=>80,'diameter'=>80,'unit'=>40,'usageState'=>20,'pairRole'=>10] as $k=>$limit){$v=$body[$k]??'';if(!is_string($v)||strlen($v)>$limit)throw new InvalidArgumentException('Bitte die Reifenangaben prüfen.');$p[$k]=trim($v);}
+    if(($body['dimensionsEdited']??false)===true){
+        $p['dimensionLabel']=implode(' × ',array_values(array_filter([$p['dimensionSize'],$p['width']],fn($v)=>$v!=='')));
+        $p['diameter']=$record['diameter']??'';
+    }elseif($record){
+        foreach(['dimensionLabel','width','diameter','unit'] as $key)$p[$key]=$record[$key]??'';
+        if(($record['dimensionSize']??null)===null)unset($p['dimensionSize']);else $p['dimensionSize']=$record['dimensionSize'];
+    }elseif(!array_key_exists('dimensionSize',$body))unset($p['dimensionSize']);
     if($p['manufactureYear']!==''&&(!ctype_digit($p['manufactureYear'])||(int)$p['manufactureYear']<1900||(int)$p['manufactureYear']>2100))throw new InvalidArgumentException('Bitte ein gültiges Baujahr angeben.');
     if(!in_array($p['usageState'],['new','used','unknown'],true)||!in_array($p['pairRole'],['','front','rear'],true))throw new InvalidArgumentException('Bitte Zustand und Paarrolle prüfen.');
     if(!empty($record['everMounted'])&&$p['usageState']==='new')throw new InvalidArgumentException('Ein bereits montierter Reifen ist nicht neu.');
@@ -72,7 +84,7 @@ function gt_tp_save(array &$g,array $body): string {
     $profile['pairId']='';
     if($pairRecord){$otherPair=$profiles[$partner]['pairId']??'';foreach($profiles as &$x)if($otherPair!==''&&($x['pairId']??'')===$otherPair){$x['pairId']='';$x['pairRole']='';}unset($x);
         $pair=bin2hex(random_bytes(16));$profile['pairId']=$pair;$profile['pairRole']=$profile['pairRole']?:'front';
-        $other=$profiles[$partner]??array_intersect_key($pairRecord,array_flip(['id','manufacturer','model','manufactureYear','purpose','tread','tubeless','dimensionLabel','width','diameter','unit','photo','usageState','initialMileage']));$other['pairId']=$pair;$other['pairRole']=$profile['pairRole']==='front'?'rear':'front';$profiles[$partner]=$other;
+        $other=$profiles[$partner]??array_intersect_key($pairRecord,array_flip(['id','manufacturer','model','manufactureYear','purpose','tread','tubeless','dimensionSize','dimensionLabel','width','diameter','unit','photo','usageState','initialMileage']));$other['pairId']=$pair;$other['pairRole']=$profile['pairRole']==='front'?'rear':'front';$profiles[$partner]=$other;
     }else $profile['pairRole']='';
     if(!$record){
         $sourceStock=$body['inventoryId']??'';$sourcePosition=$body['positionId']??'';$si=null;
@@ -92,7 +104,7 @@ function gt_tp_save(array &$g,array $body): string {
         foreach($g['bikes'] as &$b)if($b['id']===$record['mount']['bikeId'])foreach($b['components'] as $ci=>&$c)if(gt_component_key($c,$ci)===$record['mount']['componentKey']){
             // Pin an imported legacy instance before a normal component edit assigns a new ID.
             $c['id']=$c['id']??bin2hex(random_bytes(16));$c['tireId']=$id;$c['tireHistory']=$c['tireHistory']??[];
-            $c['manufacturer']=$profile['manufacturer'];$c['model']=$profile['model'];
+            $c['manufacturer']=$profile['manufacturer'];$c['model']=$profile['model'];$c['tireDimensions']=gt_tp_dimensions($profile,$c);
         }unset($b,$c);
     }
     $profiles[$id]=$profile;$g['tireProfiles']=array_values($profiles);return $id;
@@ -120,15 +132,21 @@ function gt_tp_swap(array &$g,array $body): string {
         foreach($g['inventory'][$si]['positions'] as $i=>$p)if($p['id']===$incoming['stock']['positionId'])$pi=$i;
         $s=&$g['inventory'][$si];$p=&$s['positions'][$pi];if($p['quantity']!=1)throw new InvalidArgumentException('Dieser Reifen ist nicht mehr auf Lager.');
         $movement=gt_tp_movement($s,$pi,-1,'withdrawal',$day,['bikeId'=>$bikeId,'bikeName'=>$b['name'],'reason'=>'Schnellwechsel: Reifen montiert']);
-        $component=$p['tire']['component'];$component['id']=bin2hex(random_bytes(16));$component['name']=$slot;$component['category']='Reifen';$component['tireId']=$in;$component['tireHistory']=$p['tire']['history'];$component['tireInstallMovementId']=$movement;$component['installedDate']=$day;$component['installedKm']=$b['km'];
+        $component=$p['tire']['component'];$component['id']=bin2hex(random_bytes(16));$component['name']=$slot;$component['category']='Reifen';$component['tireId']=$in;$component['tireHistory']=$p['tire']['history'];$component['tireInstallMovementId']=$movement;$component['installedDate']=$day;$component['installedKm']=$b['km'];$component['tireDimensions']=$incoming['dimensions'];
         foreach(['manufacturer','model'] as $key)$component[$key]=$incoming[$key];
         if($incoming['width']!==''&&is_numeric($incoming['width'])&&(float)$incoming['width']>0){$component['tireWidth']=(float)$incoming['width'];$component['tireUnit']=in_array($incoming['unit'],['mm','Zoll'],true)?$incoming['unit']:'mm';}
         $b['components'][]=$component;$s['movements'][count($s['movements'])-1]['tireInstallId']=$component['id'];
         foreach($g['tireProfiles']??[] as $i=>$profile)if($profile['id']===$in)$g['tireProfiles'][$i]['usageState']='used';
         $newName=trim($incoming['manufacturer'].' '.$incoming['model'])?:'Reifen';unset($s,$p);
     }
-    $g['history'][]=['id'=>bin2hex(random_bytes(16)),'bikeId'=>$bikeId,'title'=>'Reifenwechsel · '.$slot,'date'=>$day,'km'=>$b['km'],'cost'=>0,'contactId'=>'','workshop'=>'Selbst','part'=>$newName,'partSerial'=>'','notes'=>'Ausgebaut: '.$oldName.'. Eingebaut: '.$newName.'. Laufleistung der ausgebauten Montage: '.($oldMileage===null?'unbekannt':$oldMileage.' km').'.','attachments'=>[],'materials'=>[],'tireChange'=>['outgoingId'=>$out,'incomingId'=>$in,'position'=>$slot,'removedMileage'=>$oldMileage,'incomingMileage'=>$incoming['totalMileage']??null]];
+    $g['history'][]=['id'=>bin2hex(random_bytes(16)),'bikeId'=>$bikeId,'title'=>($out===''?'Reifen montiert':($in===''?'Reifen ausgebaut':'Reifenwechsel')).' · '.$slot,'date'=>$day,'km'=>$b['km'],'cost'=>0,'contactId'=>'','workshop'=>'Selbst','part'=>$newName,'partSerial'=>'','notes'=>'Ausgebaut: '.$oldName.'. Eingebaut: '.$newName.'. Laufleistung der ausgebauten Montage: '.($oldMileage===null?'unbekannt':$oldMileage.' km').'.','attachments'=>[],'materials'=>[],'tireChange'=>['outgoingId'=>$out,'incomingId'=>$in,'position'=>$slot,'removedMileage'=>$oldMileage,'incomingMileage'=>$incoming['totalMileage']??null]];
     unset($b);return $in?:$out;
+}
+function gt_tp_save_mount(array &$g,array $body): string {
+    // Create/serialize and mount in the same transaction; an occupied slot rolls everything back.
+    $body['id']='';$id=gt_tp_save($g,$body);
+    gt_tp_swap($g,['bikeId'=>$body['bikeId']??'','position'=>$body['position']??'','outgoingId'=>'','incomingId'=>$id,'date'=>$body['date']??'','location'=>'']);
+    return $id;
 }
 function gt_tp_guard(array $before,array $after): bool {
     require_once __DIR__ . '/biography.php';
@@ -156,7 +174,7 @@ function gt_tp_route(string $method): never {
         foreach($g['tireParkOperations']??[] as $op)if($op['id']===$body['operationId']){if($op['hash']!==$hash)throw new InvalidArgumentException('Diese Vorgangs-ID wurde bereits für andere Angaben verwendet.');$db->commit();gt_json(['ok'=>true,'id'=>$op['tireId'],'version'=>(int)$row['version'],'replayed'=>true]);}
         if((int)$row['version']!==$body['version']){$db->rollBack();gt_json(['error'=>'Auf einem anderen Gerät wurden Daten geändert. Bitte neu laden.'],409);}
         $g['history']??=[];$g['inventory']??=[];
-        $id=match($body['action']??''){'save'=>gt_tp_save($g,$body),'swap'=>gt_tp_swap($g,$body),default=>throw new InvalidArgumentException('Unbekannte Reifenpark-Aktion.')};
+        $id=match($body['action']??''){'save'=>gt_tp_save($g,$body),'swap'=>gt_tp_swap($g,$body),'saveMount'=>gt_tp_save_mount($g,$body),default=>throw new InvalidArgumentException('Unbekannte Reifenpark-Aktion.')};
         $g['tireParkOperations'][]=['id'=>$body['operationId'],'hash'=>$hash,'tireId'=>$id,'action'=>$body['action'],'at'=>gmdate('c')];
         if(!gt_validate_data($g))throw new InvalidArgumentException('Die Reifenangaben sind ungültig. Es wurde nichts gespeichert.');
         gt_query('UPDATE {{garage}} SET data=?,version=version+1 WHERE id=1',[json_encode($g,JSON_THROW_ON_ERROR)]);$db->commit();gt_log('info','backend','Reifenpark-Aktion gespeichert.',['module'=>'bikes','operation'=>'tirepark.'.$body['action']]);gt_json(['ok'=>true,'id'=>$id,'version'=>(int)$row['version']+1]);

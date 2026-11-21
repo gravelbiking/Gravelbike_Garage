@@ -51,6 +51,19 @@ def check_release133(call,project,private,configuration):
  # Pair unlinking preserves individual histories; feature disable keeps all stored data.
  post('save',id=b,profile={'usageState':'used','initialMileage':25})
  rr=records();assert rr[b]['pairId']=='' and rr[a]['pairId']=='';assert len(rr[a]['history'])==2
+ # New bicycle attachment uses one transaction, with exact 700 × 45 dimensions.
+ attached,request=post('saveMount',bikeId='tp-bike-b',position='Vorderreifen',date=day,profile={'usageState':'new','dimensionSize':'700','width':'45','dimensionsEdited':True,'manufacturer':'Test','model':'Direktmontage'})
+ linked=records()[attached['id']];assert linked['mount']['bikeId']=='tp-bike-b';assert linked['dimensions']=='700 × 45';assert linked['width']=='45';assert not linked['isNew'];assert linked['totalMileage']==0
+ assert call('tirepark','POST',request)[1]['replayed']
+ post('saveMount',400,bikeId='tp-bike-b',position='Vorderreifen',date=day,profile={'usageState':'new','model':'must roll back'})
+ assert any(c.get('tireDimensions')=='700 × 45' for x in state()['data']['bikes'] if x['id']=='tp-bike-b' for c in x['components'])
+ legacy,_=post('save',profile={'usageState':'unknown','dimensionLabel':'40-622','width':'40','diameter':'622'})
+ assert records()[legacy['id']]['dimensions']=='40-622'
+ post('save',id=legacy['id'],profile={'usageState':'unknown','manufacturer':'Edited'})
+ assert records()[legacy['id']]['dimensionLabel']=='40-622' and records()[legacy['id']]['diameter']=='622'
+ post('save',id=legacy['id'],profile={'usageState':'unknown','dimensionSize':'700','width':'45','dimensionsEdited':True})
+ assert records()[legacy['id']]['dimensions']=='700 × 45' and records()[legacy['id']]['diameter']=='622'
+ print('PASS Reifenpark assignment: atomic create+mount, occupied-slot rollback, exact dimensions and legacy dimension preservation.')
  previous_config=(private/'config.php').read_bytes();snapshot=state()
  try:
   disabled={**configuration,'features':{'tirepark':False}};encoded=base64.b64encode(json.dumps(disabled).encode()).decode();(private/'config.php').write_text("<?php return json_decode(base64_decode('"+encoded+"'),true);")
