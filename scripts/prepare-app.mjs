@@ -13,13 +13,14 @@ export async function prepareApp(output,{development=false,installationKey=null,
  await mkdir(pub,{recursive:true});await mkdir(join(priv,'data'),{recursive:true});
 let [html,css,client,logic,icon,supplies,contacts,security,qr,equipment,inventory,updates,navigation,administration,documents,orders,strava]=await Promise.all(['src/index.html','src/style.css','src/client.js','src/logic.js','src/icon.svg','src/supplies.js','src/contacts.js','src/security.js','src/vendor/qrcode.js','src/equipment.js','src/inventory.js','src/updates.js','src/navigation.js','src/administration.js','src/documents.js','src/orders.js','src/strava.js'].map(read));
 const serviceWizards=await read('src/service-wizards.js');
+const tirepark=await read('src/tirepark.js');
 const resilience=await read('src/resilience.js');
 const {version,releaseName=''}=JSON.parse(await read('package.json'));
 if(!/^(?:0|[1-9]\d{0,3})(?:\.(?:0|[1-9]\d{0,3})){2}(?:\.[a-z])?$/.test(version))throw Error('Invalid application version');
 if(typeof releaseName!=='string'||(releaseName&&!/^[\p{L}\p{N}][\p{L}\p{N} ._-]{0,79}$/u.test(releaseName)))throw Error('Invalid release name');
 administration=administration.replace('/*APP_RELEASE*/{}',JSON.stringify({version,name:releaseName,development}));
 html=html.replaceAll('<span class="app-version">GRAVELBIKE GARAGE</span>',`<span class="app-version">GRAVELBIKE GARAGE · ${version}${releaseName?' · '+releaseName:''}</span>`);
-const fingerprint=createHash('sha256').update(resilience+version+serviceWizards+html+css+client+logic+supplies+contacts+security+qr+equipment+inventory+updates+navigation+administration+documents+orders+strava).digest('hex').slice(0,12);
+const fingerprint=createHash('sha256').update(tirepark+resilience+version+serviceWizards+html+css+client+logic+supplies+contacts+security+qr+equipment+inventory+updates+navigation+administration+documents+orders+strava).digest('hex').slice(0,12);
 const replace=(source,from,to)=>{if(!source.includes(from))throw Error('Frontend template changed: '+from.slice(0,70));return source.replace(from,to);};
 client=replace(client,"fetch('/api/'+path,","fetch('api.php?route='+encodeURIComponent(path),");
 client=client.replaceAll('/api/files/','api.php?route=files%2F').replaceAll("'/icon.svg'","'icon.svg'").replaceAll("register('/sw.js')","register('sw.js')");
@@ -37,7 +38,7 @@ if(development){html=html.replace('<body>','<body><div class="dev-banner" role="
 await Promise.all([
  copyFile(join(project,'src/uberspace-badge.png'),join(pub,'uberspace-badge.png')),
  writeFile(join(pub,'app.html'),html),writeFile(join(pub,'style.css'),css),
- writeFile(join(pub,'app.js'),qr+'\n'+logic.replaceAll('export function','function')+'\n'+supplies.replaceAll('/api/files/','api.php?route=files%2F')+'\n'+contacts.replaceAll('/api/files/','api.php?route=files%2F')+'\n'+inventory.replaceAll('/api/files/','api.php?route=files%2F')+'\n'+equipment.replaceAll('/api/files/','api.php?route=files%2F')+'\n'+security+'\n'+updates+'\n'+navigation+'\n'+administration+'\n'+documents.replaceAll('/api/files/','api.php?route=files%2F')+'\n'+orders+'\n'+strava+'\n'+serviceWizards.replaceAll('/api/files/','api.php?route=files%2F')+'\n'+client),writeFile(join(pub,'icon.svg'),icon),
+ writeFile(join(pub,'app.js'),qr+'\n'+logic.replaceAll('export function','function')+'\n'+supplies.replaceAll('/api/files/','api.php?route=files%2F')+'\n'+contacts.replaceAll('/api/files/','api.php?route=files%2F')+'\n'+inventory.replaceAll('/api/files/','api.php?route=files%2F')+'\n'+equipment.replaceAll('/api/files/','api.php?route=files%2F')+'\n'+security+'\n'+updates+'\n'+navigation+'\n'+administration+'\n'+documents.replaceAll('/api/files/','api.php?route=files%2F')+'\n'+orders+'\n'+strava+'\n'+serviceWizards.replaceAll('/api/files/','api.php?route=files%2F')+'\n'+tirepark.replaceAll('/api/files/','api.php?route=files%2F')+'\n'+client),writeFile(join(pub,'icon.svg'),icon),
  writeFile(join(pub,'manifest.webmanifest'),JSON.stringify({name:'Gravelbike Garage',short_name:'Gravelbike Garage',lang:'de',start_url:'./',scope:'./',display:'standalone',background_color:'#f5f5f0',theme_color:'#233e32',icons:[{src:'icon.svg',sizes:'any',type:'image/svg+xml',purpose:'any'}]},null,2)),
  writeFile(join(pub,'sw.js'),"// Private records and contracts are deliberately never cached.\nself.addEventListener('install',()=>self.skipWaiting());self.addEventListener('activate',e=>e.waitUntil(self.clients.claim()));self.addEventListener('fetch',()=>{});self.addEventListener('notificationclick',event=>{event.notification.close();event.waitUntil(clients.openWindow(self.registration.scope));});\n"),
  writeFile(join(priv,'release.json'),JSON.stringify({version,name:releaseName})),
@@ -46,7 +47,7 @@ await Promise.all([
  writeFile(join(upload,'index.php'),"<?php\nheader('Location: public/', true, 302);\nexit;\n"),
  writeFile(join(priv,'data','.keep'),''),writeFile(join(priv,'protection-check.txt'),'GRAVELBIKE_GARAGE_PRIVATE_DO_NOT_EXPOSE\n'),
 ]);
-for(const [from,name] of [['selfhost/logging.php','logging.php'],['selfhost/check-hosting.php','check-hosting.php'],['selfhost/mfa.php','mfa.php'],['selfhost/biography.php','biography.php'],['selfhost/schema.sql','schema.sql'],['selfhost/backend.php','backend.php'],['selfhost/updates.php','updates.php'],['selfhost/administration.php','administration.php'],['selfhost/features.php','features.php'],['selfhost/workshop.php','workshop.php'],['selfhost/inventory-report.php','inventory-report.php'],['selfhost/config.php','config.php'],['selfhost/strava.php','strava.php'],['selfhost/strava-job.php','strava-job.php']]){
+for(const [from,name] of [['selfhost/tirepark.php','tirepark.php'],['selfhost/logging.php','logging.php'],['selfhost/check-hosting.php','check-hosting.php'],['selfhost/mfa.php','mfa.php'],['selfhost/biography.php','biography.php'],['selfhost/schema.sql','schema.sql'],['selfhost/backend.php','backend.php'],['selfhost/updates.php','updates.php'],['selfhost/administration.php','administration.php'],['selfhost/features.php','features.php'],['selfhost/workshop.php','workshop.php'],['selfhost/inventory-report.php','inventory-report.php'],['selfhost/config.php','config.php'],['selfhost/strava.php','strava.php'],['selfhost/strava-job.php','strava-job.php']]){
  if(name==='config.php'&&preserveConfig&&existsSync(join(priv,name)))continue;
  await copyFile(join(project,from),join(priv,name));
 }

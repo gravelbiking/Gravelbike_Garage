@@ -2,7 +2,7 @@ const navModules=[
  {id:'dashboard',label:'Startseite',icon:'⌂'},
  {id:'bikes',label:'Meine Fahrräder',icon:'bicycle',children:[
   ['parking','Fahrradparkplatz','Ⓟ'],['service','Serviceintervalle','◷'],['maintenance','Wartung','wrench'],
-  ['history','Servicebuch','book'],['computers','Radcomputer','GPS'],['archive','Fahrradarchiv','cloud']
+  ['tirepark','Reifenpark','◉'],['history','Servicebuch','book'],['computers','Radcomputer','GPS'],['archive','Fahrradarchiv','cloud']
  ]},
  {id:'inventory',label:'Lager',icon:'shelf'},
  {id:'contacts',label:'Adressbuch',icon:'☷'},
@@ -32,17 +32,17 @@ function navIcon(icon){
 }
 
 function renderNavigation(page){
- const parent={bike:data.bikes.find(b=>encodeURIComponent(b.id)===location.hash.split('/')[1])?.archived?'archive':'parking',computer:'computers',stock:'inventory',order:(data.orders||[]).some(o=>encodeURIComponent(o.id)===location.hash.split('/')[1]&&(o.maintenancePlanning||o.planId))?'maintenance':'orders',guide:'guides',plan:'service',purchase:'inventory',shopping:'inventory',entry:'history',contact:'contacts',updates:'info'}[page]||page;
+ const parent={bike:data.bikes.find(b=>encodeURIComponent(b.id)===location.hash.split('/')[1])?.archived?'archive':'parking',computer:'computers',stock:'inventory',order:(data.orders||[]).some(o=>encodeURIComponent(o.id)===location.hash.split('/')[1]&&(o.maintenancePlanning||o.planId))?'maintenance':'orders',guide:'guides',plan:'service',purchase:'inventory',shopping:'inventory',entry:'history',tire:'tirepark',contact:'contacts',updates:'info'}[page]||page;
  const owner=navModules.find(m=>m.id===parent||m.children?.some(([id])=>id===parent))||navModules[0];
  const child=owner.children?.find(([id])=>id===parent);
  $('#crumb').textContent=child?`${owner.label} / ${child[1]}`:owner.label;
  const link=(id,label,icon,module=false)=>`<a href="#${id}" ${id===parent?'aria-current="page"':''} class="${module?'module-link ':''}${id===parent?'active':''}">${navIcon(icon)}<span>${label}</span></a>`;
- $('#nav').innerHTML=`<ul class="module-nav">${navModules.map(m=>`<li class="${owner===m?'current-module':''}">${m.children?`<span class="module-label">${navIcon(m.icon)}<span>${m.label}</span></span>`:''}${link(m.id,m.label,m.icon,!!m.children)}${m.children?`<ul class="area-nav">${m.children.map(item=>link(...item)).map(a=>'<li>'+a+'</li>').join('')}</ul>`:''}</li>`).join('')}</ul>`;
+ $('#nav').innerHTML=`<ul class="module-nav">${navModules.map(m=>`<li class="${owner===m?'current-module':''}">${m.children?`<span class="module-label">${navIcon(m.icon)}<span>${m.label}</span></span>`:''}${link(m.id,m.label,m.icon,!!m.children)}${m.children?`<ul class="area-nav">${m.children.filter(([id])=>id!=='tirepark'||typeof tireParkEnabled==='undefined'||tireParkEnabled).map(item=>link(...item)).map(a=>'<li>'+a+'</li>').join('')}</ul>`:''}</li>`).join('')}</ul>`;
 }
 
 function moduleDashboard(id,description){
  const module=navModules.find(m=>m.id===id);
- return heading(module.label,description)+`<div class="supply-grid module-cards">${module.children.map(([route,label,icon])=>`<a class="panel" href="#${route}">${navIcon(icon)}<strong>${label}</strong><span aria-hidden="true">↗</span></a>`).join('')}</div>`;
+ return heading(module.label,description)+`<div class="supply-grid module-cards">${module.children.filter(([route])=>route!=='tirepark'||typeof tireParkEnabled==='undefined'||tireParkEnabled).map(([route,label,icon])=>`<a class="panel" href="#${route}">${navIcon(icon)}<strong>${label}</strong><span aria-hidden="true">↗</span></a>`).join('')}</div>`;
 }
 
 function renderPage(){
@@ -55,7 +55,7 @@ function renderPage(){
   parking:bikesPage, bike:()=>detail(id), archive:archivePage, service:servicePage, history:historyPage, plan:()=>planDetail(id), entry:()=>historyDetail(id), purchase:()=>purchaseDetail(id), shopping:()=>heading('Einkaufsliste','Geplante Einkäufe und Material für deine Werkstatt.')+shoppingList(),
   computers:computersPage, computer:()=>computerDetail(id), inventory:inventoryPage, stock:()=>stockDetail(id,subId),
   contacts:addressBook, contact:()=>addressBook(id), workshop:()=>moduleDashboard('workshop','Werkzeug und Werkstattanleitungen an einem Ort.'),
-  maintenance:maintenancePage, tools:toolsPage, guides:()=>guidesPage(), guide:()=>guidesPage(id), documents:documentsPage, orders:()=>ordersPage(), order:()=>orderDashboard(id),
+  tirepark:()=>tireParkPage(), tire:()=>tireParkPage(id), maintenance:maintenancePage, tools:toolsPage, guides:()=>guidesPage(), guide:()=>guidesPage(id), documents:documentsPage, orders:()=>ordersPage(), order:()=>orderDashboard(id),
   settings:()=>moduleDashboard('settings','Konfiguration, Zugang und Betrieb deiner Garage.'),
   configuration:configurationPage, strava:()=>heading('Strava Integration','Konten verbinden und Fahrräder zuordnen.')+stravaPanel(), users:usersPage, system:systemPage, info:()=>infoPage(id), updates:()=>infoPage('update'), backup:backupPage
  };
@@ -68,6 +68,7 @@ function renderPage(){
  }
  notify();
  if(page==='dashboard')refreshPasswordStatus();
+ if(page==='tirepark'||page==='tire'||page==='bike')queueMicrotask(()=>refreshTirePark());
  if(page==='strava')refreshStrava();
  if(page==='users'){refreshSecurityStatus();refreshPasswordStatus();}
  if(page==='updates'||(page==='info'&&id==='update'))refreshUpdates();

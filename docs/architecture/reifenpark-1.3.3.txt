@@ -1,0 +1,60 @@
+Gravelbike Garage 1.3.3 - Reifenpark
+Issues #130, #131, #132, #133
+
+Speicherung
+Keine neuen SQL-Tabellen. Die Instanz verwendet weiterhin gt_garage (id=1),
+Spalte data als JSON, plus Versionszähler version. Das Präfix ist konfigurierbar.
+
+Neu: tireProfiles[] mit stabiler Reifen-ID und optionalen Stammdaten:
+photo, manufacturer, model, manufactureYear, purpose, tread, tubeless,
+dimensionLabel, width, diameter, unit, usageState, initialMileage, pairId, pairRole.
+Die Paarrolle ist unabhängig von der tatsächlichen Montageposition. Beide
+Exemplare behalten getrennte Fotos, Historien und Laufleistungen.
+
+Bestand und Montage verwenden bestehende Strukturen:
+- bikes[].components[]: tireId, installedDate, installedKm, tireHistory[].
+- inventory[].positions[].tire: id, component und history[].
+- inventory[].movements[]: vorhandenes, fortlaufendes Lagerjournal.
+- history[].tireChange: Reifenwechsel im Fahrrad-Lebenslauf.
+- tireParkOperations[]: Vorgangs-ID, Anfragehash, Aktion, Reifen-ID und Zeitpunkt
+  für sichere Wiederholungen. Keine kompletten Formulare oder Bilder im Journal.
+- gt_files plus privater Upload-Speicher: Foto-Metadaten bzw. Bildinhalt.
+
+Lesemodell
+Die Reifenpark-Ansicht führt diese Strukturen anhand der Exemplar-ID zusammen.
+Aktuelle Montage und bisherige Perioden liegen am montierten Bauteil; nach Ausbau
+liegt die ergänzte Historie in der Lagerposition. Menge 0 ist ein historischer
+Nachweis, kein zweites verfügbares Exemplar. Vorhandene anonyme Reifenbestände
+können ohne Erhöhung der Gesamtmenge in Einzelreifen umgebucht werden. Importierte
+montierte Reifen erscheinen direkt; ihre stabile ID wird beim Speichern eines
+Steckbriefs festgeschrieben. Es findet keine spekulative Rekonstruktion unbekannter
+früherer Kilometer statt.
+
+Schreibmodell und Schutz
+Angemeldete POST-Anfragen an tirepark verwenden dieselbe Origin-Prüfung und den
+Update-Schreibschutz wie andere Änderungen. Jede Aktion läuft in einer
+Datenbanktransaktion mit SELECT FOR UPDATE und Versionsprüfung. Bereits
+verarbeitete Vorgänge werden anhand von operationId/Hash wiedererkannt. Fremd
+montierte Reifen und widersprüchliche Zeitpunkte werden abgewiesen. Gewöhnliches
+Speichern kann Reifenprofile und Vorgangsjournal nicht überschreiben. Ein
+Schnellwechsel erzeugt keinen Werkstattauftrag. Fotos werden auf Dateityp geprüft.
+
+Bedienung
+Meine Fahrräder -> Reifenpark: Alle, Montiert, Eingelagert; Suche; Steckbrief,
+optionales Foto, Paarverknüpfung und Historie. Die Schnellaktion am Fahrrad bietet
+Ausbau/Einlagerung, Einbau auf freier Position oder Austausch in einem Vorgang.
+Aktueller Kilometerstand wird übernommen, Datum ist sichtbar und bestätigbar.
+Neu ist nur ein bestätigter neuer Reifen ohne Montagevorgeschichte. Nach Montage
+kehrt das Badge nicht wieder. Keine erfasste Vorgeschichte bedeutet unbekannt.
+
+Rückweg
+Eigener Branch feature/reifenpark-1.3.3; getrennt vom bisherigen Release-Branch.
+Vor Installation vollständiges Backup. Der Instanzschalter features.tirepark=false
+in private/config.php deaktiviert Ansicht und API, erhält jedoch Profile,
+Lagerjournale, Kilometerhistorie und Fotos. Keine Daten löschen, um die Funktion
+zurückzunehmen. Ein Downgrade auf ältere Software bedarf gesonderter Prüfung und
+ist kein Ersatz für diesen Schalter. Beim späteren Zusammenführen in main diese
+Deaktivierbarkeit erhalten. Andere Instanzen werden in diesem Auftrag nicht geändert.
+
+Bereitstellung dieses Auftrags: ausschließlich Test1. Kein GitHub-Quellcode-Push,
+kein globaler Rollout, kein GitHub-Release beauftragt.

@@ -1,6 +1,6 @@
 # Gravelbike Garage
 
-**Version 1.3.2 · Teststand**
+**Version 1.3.3 · Reifenpark · Teststand**
 
 Eine private Fahrradgarage als Web-App: Fahrräder und verbaute Bauteile verwalten, Serviceintervalle planen, Werkstattaufträge dokumentieren, Ersatzteilbestände führen und Dokumente sicher zuordnen. Die App lässt sich am Mac, auf dem Tablet und Smartphone im Browser oder als installierte Web-App nutzen.
 
@@ -12,6 +12,17 @@ Eine private Fahrradgarage als Web-App: Fahrräder und verbaute Bauteile verwalt
 - **Adressbuch und Dokumente:** Kontakte, Werkstatttermine, Rechnungen, Verträge und technische Unterlagen.
 - **Strava:** Zwei unabhängige Verbindungen mit jeweils eigener Client-ID und eigenem Client-Secret; Fahrräder getrennt zuordnen und Kilometer synchronisieren.
 - **Verwaltung:** Passwortschutz, optionale Zwei-Faktor-Anmeldung, Passkeys/YubiKey, Einstellungen, Handbuch und Versionsinformationen.
+
+## Neu in 1.3.3 · Reifenpark
+
+- Eigener Steckbrief je Reifen mit optionalem Foto, Hersteller, Modell, Baujahr, Einsatzzweck, Profil, Tubeless-Angabe und Dimensionen.
+- Optionale Reifenpaare; jedes Exemplar behält eigene Daten und Laufleistung.
+- Übersicht aller montierten/eingelagerten Reifen, Suche und Neu-Badge nur vor der ersten Montage eines bestätigten neuen Reifens.
+- Schneller Reifenwechsel direkt am Fahrrad ohne Werkstattauftrag; vollständige Ein-/Ausbauhistorie über alle Fahrräder.
+- Gemeinsame, serverseitig atomare Buchung von Fahrradkonfiguration, Lager und Lebenslauf mit Versionsschutz und Wiederholungserkennung.
+- Vorhandene nicht einzeln erfasste Reifenbestände lassen sich ohne Mengenverdoppelung übernehmen.
+
+Issues #130–#133. Bereitstellung ausschließlich auf Test1. Kein GitHub-Release im Rahmen dieses Auftrags.
 
 ## Neu in 1.3.2
 

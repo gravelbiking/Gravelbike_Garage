@@ -67,6 +67,16 @@ function gt_bio(array $garage, string $bikeId, string $kind, bool $archive = fal
         if (!isset($slots[$key])) {$unused.=$partArchive($c);$slots[$key]=true;}
     }
     if ($unused!=='') $html.='<h2>Teilearchiv – aktuell nicht verbaute Bauteile</h2>'.$unused;
+    if(function_exists('gt_tp_records')&&gt_tp_enabled()){
+        $tireHtml='';foreach(gt_tp_records($garage) as $t){
+            $periods=array_values(array_filter($t['history'],fn($h)=>$h['bikeId']===$bikeId));
+            if(($t['mount']['bikeId']??'')===$bikeId)array_unshift($periods,$t['mount']+['current'=>true]);
+            if(!$periods)continue;
+            $tireHtml.='<article><h3>'.$e(trim($t['manufacturer'].' '.$t['model'])?:'Reifen '.$t['id']).'</h3><p>Gesamtlaufleistung Reifen: '.($t['totalMileage']===null?'Unbekannt; '.$kmNumber($t['knownMileage']).' km dokumentiert':$kmNumber($t['totalMileage']).' km').'</p><ul>';
+            foreach($periods as $h)$tireHtml.='<li>'.$e($h['position']??'Position nicht dokumentiert').' · angebaut '.$date($h['installedDate']??'').' bei '.$kmNumber($h['installedKm']??null).' km · '.(!empty($h['current'])?'noch montiert, aktueller Stand '.$kmNumber($h['currentKm']).' km':'abgebaut '.$date($h['removedDate']??'').' bei '.$kmNumber($h['removedKm']??null).' km').' · in dieser Montage '.(($h['mileage']??null)===null?'Laufleistung unbekannt':$kmNumber($h['mileage']).' km').'</li>';
+            $tireHtml.='</ul></article>';
+        }if($tireHtml!=='')$html.='<h2>Reifenpark · Montagehistorie dieses Fahrrads</h2>'.$tireHtml;
+    }
     $planned=array_values(array_filter($garage['plans'],fn($p)=>$p['bikeId']===$bikeId&&empty($p['completed'])));
     if($planned){$html.='<h2>Geplante Serviceintervalle</h2><p class="muted">Künftige Planung, kein Durchführungsnachweis.</p><ul>';
         foreach($planned as $p){$next=!empty($p['nextDate'])?$date($p['nextDate']):$kmNumber($p['nextKm']??null).' km';$repeat=!empty($p['months'])?'alle '.$number($p['months']).' Monate':(!empty($p['intervalKm'])?'alle '.$kmNumber($p['intervalKm']).' km':'einmalig');$html.='<li>'.$e($p['title']).' · '.$e($p['source']??'Eigenes Intervall').' · '.$e($repeat).' · nächste Fälligkeit: '.$e($next).' · '.(($p['performer']??'self')==='custom'?$e($p['performerName']??'Eigene Angabe'):(($p['performer']??'self')==='workshop'?'Werkstatt':'Selbst')).'</li>';}

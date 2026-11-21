@@ -6,6 +6,7 @@ ini_set('display_errors', '0');
 umask(0027);
 require_once __DIR__ . '/updates.php';
 require_once __DIR__ . '/logging.php';
+require_once __DIR__ . '/tirepark.php';
 gt_log_install();
 
 function gt_json(array $value, int $status = 200): never {
@@ -478,13 +479,14 @@ function gt_api(): never {
         if ($route === 'auth' && $method === 'GET') {
             $account = gt_account();
             $active = $account && gt_session();
-            gt_json(['setup' => !$account, 'mfaPending' => !$active && isset($_COOKIE[gt_cookie_name('pending')]), 'authenticated' => $active, 'username' => $active ? $account['username'] : null, 'passwordStatus'=>$active ? gt_password_status() : null]);
+            gt_json(['setup' => !$account, 'mfaPending' => !$active && isset($_COOKIE[gt_cookie_name('pending')]), 'authenticated' => $active, 'username' => $active ? $account['username'] : null, 'passwordStatus'=>$active ? gt_password_status() : null,'tireparkEnabled'=>$active?gt_tp_enabled():false]);
         }
         if ($route === 'auth' && $method === 'POST') gt_auth();
         gt_policy_init();
         if (gt_session() && gt_password_status()['required'] && !in_array($route,['account/password','account/status','logout'],true)) gt_json(['error'=>'Bitte zuerst dein Passwort ändern.', 'passwordChangeRequired'=>true],428);
         if (str_starts_with($route,'security/')) gt_mfa_route($route,$method);
         if (!gt_session()) gt_json(['error' => 'Bitte mit deinem Benutzernamen und Passwort anmelden.'], 401);
+        if ($route === 'tirepark') gt_tp_route($method);
         if ($route === 'client-error' && $method === 'POST') {
             $body=gt_body();$entries=$body['entries']??[$body];
             if(!is_array($entries)||count($entries)>25)gt_json(['error'=>'Ungültiger Fehlerbericht.'],400);
@@ -519,6 +521,7 @@ function gt_api(): never {
             $previous = gt_query('SELECT data,version FROM {{garage}} WHERE id = 1')->fetch(PDO::FETCH_ASSOC);
             if ((int)$previous['version'] !== $body['version']) gt_json(['error'=>'Auf einem anderen Gerät wurden Daten geändert. Bitte neu laden.'],409);
             $oldData = json_decode($previous['data'],true,64,JSON_THROW_ON_ERROR);
+            if (!gt_tp_guard($oldData,$body['data'])) gt_json(['error'=>'Reifen-Steckbriefe und Wechsel bitte über den Reifenpark speichern.'],400);
             if (!gt_tire_transition($oldData,$body['data'])) gt_json(['error'=>'Reifen bitte über einen Werkstattauftrag ausbauen oder aus dem Lager wieder einbauen. Reifenhistorie und Lagerzuordnung müssen zusammenpassen.'],400);
             if (!gt_computer_transition($oldData,$body['data'])) gt_json(['error'=>'Radcomputer: maximal 25 Zeichen je Feld und 100 Zeichen bei Infos. Bestehende längere Texte dürfen unverändert bleiben.'],400);
             if (!gt_component_archive_transition($oldData,$body['data'])) gt_json(['error'=>'Teilearchiv oder Auftragsabschluss ist inkonsistent. Archivierte Laufleistungen bleiben unveränderlich.'],400);
