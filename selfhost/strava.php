@@ -305,6 +305,49 @@ function gt_strava_collect(array $state, array $events, bool $scan, int $now, ca
     return $rides;
 }
 
+// Keep dated odometer baselines on the same scale as the bicycle when old rides
+// arrive, change, disappear or are reassigned. No category-specific exceptions.
+function gt_strava_rebase_odometer(array &$garage,array $oldRides,array $newRides): bool {
+    $days=[];
+    foreach([[$oldRides,-1],[$newRides,1]] as [$rides,$sign])foreach($rides as $r){
+        $id=$r['bike']??'';$day=$r['date']??'';
+        if($id!==''&&preg_match('/^\d{4}-\d{2}-\d{2}$/D',$day))$days[$id][$day]=($days[$id][$day]??0)+$sign*$r['meters'];
+    }
+    foreach($days as $id=>$rows){$days[$id]=array_filter($rows,fn($meters)=>$meters!==0);if(!$days[$id])unset($days[$id]);}
+    if(!$days)return false;
+    $before=static function(string $id,$date)use($days):int{
+        if(!is_string($date)||!preg_match('/^\d{4}-\d{2}-\d{2}$/D',$date))return 0;
+        $sum=0;foreach($days[$id]??[] as $day=>$meters)if($day<$date)$sum+=$meters;
+        return $sum;
+    };
+    $changed=false;
+    $walk=function(array &$node,string $bikeId='',bool $bikeRoot=false)use(&$walk,&$changed,$before):void{
+        if(is_string($node['bikeId']??null))$bikeId=$node['bikeId'];
+        if(isset($node['component'],$node['history'])&&$node['history'])$bikeId=$node['history'][array_key_last($node['history'])]['bikeId']??$bikeId;
+        $oldStart=$node['installedKm']??$node['component']['installedKm']??null;$oldEnd=$node['removedKm']??null;
+        $keys=['installedKm'=>'installedDate','removedKm'=>'removedDate','completedKm'=>'completedAt'];
+        // The live bicycle total is updated separately by gt_strava_apply.
+        if(!$bikeRoot)$keys['km']='date';
+        foreach($keys as $kmKey=>$dateKey){
+            if(!isset($node[$kmKey])||!is_numeric($node[$kmKey]))continue;
+            $delta=$before($bikeId,$node[$dateKey]??null);if(!$delta)continue;
+            $value=round((float)$node[$kmKey]+$delta/1000,3);
+            if($value<0)throw new RuntimeException('Der Strava-Abgleich ergäbe negative historische Kilometerstände. Bitte die Einbau-km prüfen.');
+            $node[$kmKey]=$value;$changed=true;
+        }
+        if(isset($node['mileage'])&&is_numeric($node['mileage'])&&is_numeric($oldStart)&&is_numeric($oldEnd)){
+            $startDelta=isset($node['component'])?$before($bikeId,$node['component']['installedDate']??null)/1000:((float)($node['installedKm']??$oldStart)-(float)$oldStart);
+            $delta=(float)($node['removedKm']??$oldEnd)-(float)$oldEnd-$startDelta;
+            if(abs($delta)>0.0000001){$m=round(((float)$node['mileage']+$delta)*10)/10;if($m<0)throw new RuntimeException('Die Strava-Korrektur widerspricht der dokumentierten Bauteillaufleistung.');$node['mileage']=$m;$changed=true;}
+        }
+        foreach($node as $key=>&$child)if(is_array($child)){
+            if($key==='bikes')foreach($child as &$b)$walk($b,$b['id']??'',true);
+            else $walk($child,$bikeId);
+        }unset($child);
+    };
+    $walk($garage);return $changed;
+}
+
 function gt_strava_apply(array &$garage, array &$state, array $rides): bool {
     $bikes = [];
     foreach ($garage['bikes'] as $bike) $bikes[$bike['id']] = true;
@@ -324,7 +367,7 @@ function gt_strava_apply(array &$garage, array &$state, array $rides): bool {
         }
     }
     unset($ride);
-    $changed = false;
+    $changed = gt_strava_rebase_odometer($garage,$state['rides'],$rides);
     foreach ($garage['bikes'] as &$bike) {
         $id = $bike['id'];
         if (!isset($deltas[$id]) && !isset($state['dates'][$id])) continue;

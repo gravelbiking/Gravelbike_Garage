@@ -47,7 +47,7 @@ def check_release133(call,project,private,configuration):
  stock=next(s for s in g['inventory'] if s['id']==rr[a]['stock']['inventoryId']);source=next(p for p in stock['positions'] if p.get('tire',{}).get('id')==a)
  post('save',400,profile={'usageState':'unknown'},inventoryId=stock['id'],positionId=source['id'])
  bio=call('biography',params={'bike':'tp-bike-a','kind':'seller'})
- assert bio[0]==200 and b'Reifenpark' in bio[1] and b'Montagehistorie' in bio[1],bio[0]
+ assert bio[0]==200 and b'Reifenpark' not in bio[1] and b'Montagehistorie dieses Fahrrads' not in bio[1] and b'Komponenten' in bio[1],bio[0]
  # Pair unlinking preserves individual histories; feature disable keeps all stored data.
  post('save',id=b,profile={'usageState':'used','initialMileage':25})
  rr=records();assert rr[b]['pairId']=='' and rr[a]['pairId']=='';assert len(rr[a]['history'])==2
@@ -63,7 +63,28 @@ def check_release133(call,project,private,configuration):
  assert records()[legacy['id']]['dimensionLabel']=='40-622' and records()[legacy['id']]['diameter']=='622'
  post('save',id=legacy['id'],profile={'usageState':'unknown','dimensionSize':'700','width':'45','dimensionsEdited':True})
  assert records()[legacy['id']]['dimensions']=='700 × 45' and records()[legacy['id']]['diameter']=='622'
+ # Simplified profile: one size field and independent type/model, with legacy metadata retained.
+ post('save',id=legacy['id'],profile={'type':'Faltreifen','model':'Testmodell','dimensionLabel':'28 x 1.75','tubeless':False})
+ simplified=records()[legacy['id']];assert simplified['type']=='Faltreifen' and simplified['model']=='Testmodell';assert simplified['dimensions']=='28 x 1.75';assert simplified['diameter']=='622'
+ post('save',id=legacy['id'],profile={'type':'Faltreifen','dimensionLabel':''})
+ assert records()[legacy['id']]['dimensions']==''
  print('PASS Reifenpark assignment: atomic create+mount, occupied-slot rollback, exact dimensions and legacy dimension preservation.')
+ # Unknown legacy positions require an explicit, identity-preserving assignment.
+ g=state()['data'];g['bikes'].extend([{'id':'position-bike','name':'Positionstest','km':0,'components':[{'id':'unknown-tire','name':'Reifen','serial':'SHOULD-NOT-BE-SAVED','category':'Reifen','manufacturer':'Continental','model':'Contirunner','installedDate':day,'installedKm':0},{'id':'occupied-tire','name':'Hinterreifen','category':'Reifen','model':'Belegt','installedDate':day,'installedKm':0}]}]);put(g)
+ assert next(b for b in state()['data']['bikes'] if b['id']=='position-bike')['components'][0].get('serial','')==''
+ unknown=next(t for t in records().values() if t['mount'] and t['mount']['bikeId']=='position-bike' and t['mount']['position']=='Reifen');tid=unknown['id']
+ post('save',id=tid,profile={'usageState':'used','initialMileage':200,'model':'Contirunner'})
+ post('swap',400,bikeId='position-bike',position='Vorderreifen',incomingId=legacy['id'],outgoingId='',date=day)
+ post('assignPosition',400,id=tid,bikeId='position-bike',position='')
+ post('assignPosition',400,id=tid,bikeId='position-bike',position='Hinterreifen')
+ post('assignPosition',400,id=tid,bikeId='tp-bike-a',position='Vorderreifen')
+ snapshot_before=state();assigned,assignment=post('assignPosition',id=tid,bikeId='position-bike',position='Vorderreifen')
+ actual=records()[tid];assert actual['id']==tid and actual['mount']['position']=='Vorderreifen';assert actual['totalMileage']==200 and actual['mount']['mileage']==0
+ assert state()['data']['inventory']==snapshot_before['data']['inventory'];assert state()['data']['history']==snapshot_before['data']['history'];assert state()['data']['tireProfiles']==snapshot_before['data']['tireProfiles']
+ assert call('tirepark','POST',assignment)[1]['replayed'];post('assignPosition',400,id=tid,bikeId='position-bike',position='Hinterreifen')
+ post('swap',bikeId='position-bike',position='Vorderreifen',outgoingId=tid,incomingId='',date=day,location='Reifenregal')
+ assert records()[tid]['totalMileage']==200 and records()[tid]['available'];assert records()[tid]['history'][-1]['mileage']==0
+ print('PASS position repair: explicit selection, occupied/fake slot rejection, stable tire identity, unchanged stock/profiles/history, 200 prior km separate from 0 mount km, replay and successful removal.')
  previous_config=(private/'config.php').read_bytes();snapshot=state()
  try:
   disabled={**configuration,'features':{'tirepark':False}};encoded=base64.b64encode(json.dumps(disabled).encode()).decode();(private/'config.php').write_text("<?php return json_decode(base64_decode('"+encoded+"'),true);")

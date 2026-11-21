@@ -76,3 +76,9 @@ location.hash='#order/independent';run("renderNavigation('order')");assert.equal
 assert.equal(run("navModules.find(m=>m.id==='bikes').children.some(c=>c[0]==='maintenance')"),true);
 assert.equal(run("navModules.find(m=>m.id==='workshop').children.some(c=>c[0]==='maintenance')"),false);
 console.log('PASS #129: new/legacy maintenance belongs to Meine Fahrräder; independent orders remain in Werkstatt.');
+
+assert.equal(run("navModules.find(m=>m.children?.some(([id])=>id==='tirepark')).id"),'inventory');
+assert.equal(run("navModules.find(m=>m.id==='bikes').children.some(([id])=>id==='tirepark')"),false);
+location.hash='#tirepark';run('renderNavigation("tirepark")');assert.equal(nodes.get('#crumb').textContent,'Lager / Reifenpark');assert.match(nodes.get('#nav').innerHTML,/href="#tirepark" aria-current="page"/);
+location.hash='#tire/test';run('renderNavigation("tire")');assert.equal(nodes.get('#crumb').textContent,'Lager / Reifenpark');
+console.log('PASS Reifenpark belongs to Lager, including tire profile navigation and existing bookmarks.');

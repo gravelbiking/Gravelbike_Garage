@@ -2,9 +2,9 @@ const navModules=[
  {id:'dashboard',label:'Startseite',icon:'⌂'},
  {id:'bikes',label:'Meine Fahrräder',icon:'bicycle',children:[
   ['parking','Fahrradparkplatz','Ⓟ'],['service','Serviceintervalle','◷'],['maintenance','Wartung','wrench'],
-  ['tirepark','Reifenpark','◉'],['history','Servicebuch','book'],['computers','Radcomputer','GPS'],['archive','Fahrradarchiv','cloud']
+  ['history','Servicebuch','book'],['computers','Radcomputer','GPS'],['archive','Fahrradarchiv','cloud']
  ]},
- {id:'inventory',label:'Lager',icon:'shelf'},
+ {id:'inventory',label:'Lager',icon:'shelf',children:[['tirepark','Reifenpark','◉']]},
  {id:'contacts',label:'Adressbuch',icon:'☷'},
  {id:'workshop',label:'Werkstatt',icon:'wrench',children:[['orders','Werkstattaufträge','pencil'],['tools','Werkzeug','⚒'],['guides','Anleitungen','▤']]},
  {id:'documents',label:'Dokumente',icon:'document'},

@@ -516,11 +516,12 @@ function gt_api(): never {
         }
         if ($route === 'data' && $method === 'PUT') {
             $body = gt_body();
+            if(is_array($body['data']??null))gt_tp_clear_serials($body['data']);
             if (!is_int($body['version'] ?? null) || !gt_validate_data($body['data'] ?? null)) gt_json(['error' => 'Ungültige Fahrraddaten.'], 400);
             gt_query('INSERT INTO {{garage}}(id,data,version) VALUES(1,?,0) ON DUPLICATE KEY UPDATE id = id', ['{"bikes":[],"plans":[],"history":[],"documents":[]}']);
             $previous = gt_query('SELECT data,version FROM {{garage}} WHERE id = 1')->fetch(PDO::FETCH_ASSOC);
             if ((int)$previous['version'] !== $body['version']) gt_json(['error'=>'Auf einem anderen Gerät wurden Daten geändert. Bitte neu laden.'],409);
-            $oldData = json_decode($previous['data'],true,64,JSON_THROW_ON_ERROR);
+            $oldData = json_decode($previous['data'],true,64,JSON_THROW_ON_ERROR);gt_tp_clear_serials($oldData);
             if (!gt_tp_guard($oldData,$body['data'])) gt_json(['error'=>'Reifen-Steckbriefe und Wechsel bitte über den Reifenpark speichern.'],400);
             if (!gt_tire_transition($oldData,$body['data'])) gt_json(['error'=>'Reifen bitte über einen Werkstattauftrag ausbauen oder aus dem Lager wieder einbauen. Reifenhistorie und Lagerzuordnung müssen zusammenpassen.'],400);
             if (!gt_computer_transition($oldData,$body['data'])) gt_json(['error'=>'Radcomputer: maximal 25 Zeichen je Feld und 100 Zeichen bei Infos. Bestehende längere Texte dürfen unverändert bleiben.'],400);
